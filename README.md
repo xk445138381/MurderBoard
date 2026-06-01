@@ -4,3 +4,4 @@
 ## 文档
 
 - [技术规格说明](docs/technical-spec.md)
+- [数据模型](docs/data-model.md)
