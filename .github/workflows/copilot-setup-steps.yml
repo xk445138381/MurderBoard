@@ -15,5 +15,18 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+      - name: Verify Copilot CLI
+        run: copilot --version
+      - name: Add superpowers marketplace
+        run: copilot plugin marketplace add obra/superpowers-marketplace
       - name: Install superpowers plugin
-        run: copilot plugin install superpowers@superpowers-marketplace
+        run: |
+          set -euo pipefail
+          copilot plugin install superpowers@superpowers-marketplace
+          copilot plugin list
