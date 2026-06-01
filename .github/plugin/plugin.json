@@ -1,0 +1,8 @@
+{
+  "name": "superpowers",
+  "description": "MurderBoard plugin for GitHub Copilot CLI.",
+  "version": "1.0.0",
+  "repository": "https://github.com/xk445138381/MurderBoard",
+  "homepage": "https://github.com/xk445138381/MurderBoard",
+  "license": "AGPL-3.0-or-later"
+}
