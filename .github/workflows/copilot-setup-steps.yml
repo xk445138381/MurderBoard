@@ -1,4 +1,4 @@
-name: "Copilot Setup Steps"
+name: Copilot Setup Steps
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: "20"
       - name: Install Copilot CLI
-        run: npm install -g @github/copilot
+        run: npm install -g @github/copilot@1.0.56
       - name: Verify Copilot CLI
         run: copilot --version
       - name: Add superpowers marketplace
@@ -28,5 +28,8 @@ jobs:
       - name: Install superpowers plugin
         run: |
           set -euo pipefail
-          copilot plugin install superpowers@superpowers-marketplace
+          if ! copilot plugin install superpowers@superpowers-marketplace; then
+            echo "Failed to install superpowers from superpowers-marketplace." >&2
+            exit 1
+          fi
           copilot plugin list
