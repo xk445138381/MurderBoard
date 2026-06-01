@@ -1,0 +1,21 @@
+{
+  "name": "superpowers-marketplace",
+  "owner": {
+    "name": "xk445138381"
+  },
+  "metadata": {
+    "description": "Marketplace for the MurderBoard Copilot plugin.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "superpowers",
+      "source": "./",
+      "description": "MurderBoard plugin for GitHub Copilot CLI.",
+      "version": "1.0.0",
+      "repository": "https://github.com/xk445138381/MurderBoard",
+      "homepage": "https://github.com/xk445138381/MurderBoard",
+      "license": "AGPL-3.0-or-later"
+    }
+  ]
+}
