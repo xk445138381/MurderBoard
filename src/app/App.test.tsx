@@ -1,12 +1,15 @@
 import { render, screen } from '@testing-library/react';
-import { App } from './App';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { routes } from './routes';
 
-describe('App', () => {
-  it('renders the MurderBoard shell title', () => {
-    render(<App />);
+describe('App routes', () => {
+  it('renders the MurderBoard home route', async () => {
+    const router = createMemoryRouter(routes, { initialEntries: ['/'] });
+
+    render(<RouterProvider router={router} />);
 
     expect(
-      screen.getByRole('heading', { name: /murderboard/i }),
+      await screen.findByRole('heading', { name: 'MurderBoard' }),
     ).toBeInTheDocument();
   });
 });

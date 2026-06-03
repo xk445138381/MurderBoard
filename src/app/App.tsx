@@ -1,7 +1,13 @@
+import { RouterProvider } from 'react-router-dom';
+import { ErrorBoundary } from '../shared/state';
+import { createAppRouter } from './routes';
+
+const router = createAppRouter();
+
 export function App() {
   return (
-    <main>
-      <h1>MurderBoard</h1>
-    </main>
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
   );
 }
