@@ -36,7 +36,7 @@ export interface TimelineEvent {
   id: string;
   caseBoardId: string;
   title: string;
-  occurredAt: IsoDateString | null;
+  occurredAt: IsoDateString;
   description: string;
   createdAt: IsoDateString;
   updatedAt: IsoDateString;

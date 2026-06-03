@@ -1,4 +1,9 @@
-import { CORE_ENTITY_TYPES, isCoreEntityType } from './types';
+import {
+  CORE_ENTITY_TYPES,
+  isCoreEntityType,
+  type IsoDateString,
+  type TimelineEvent,
+} from './types';
 
 describe('domain types', () => {
   it('lists the core entity types from the product model', () => {
@@ -14,5 +19,9 @@ describe('domain types', () => {
   it('checks whether a value is a core entity type', () => {
     expect(isCoreEntityType('character')).toBe(true);
     expect(isCoreEntityType('scene')).toBe(false);
+  });
+
+  it('requires timeline events to have an occurrence time', () => {
+    expectTypeOf<TimelineEvent['occurredAt']>().toEqualTypeOf<IsoDateString>();
   });
 });
