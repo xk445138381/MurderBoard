@@ -66,6 +66,208 @@ a {
   padding: 2rem 1.5rem;
 }
 
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-heading {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 60rem;
+}
+
+.page-heading h1,
+.panel h2,
+.panel h3,
+.panel h4 {
+  margin: 0;
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: #7b6046;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel {
+  border: 1px solid #ddd4c4;
+  border-radius: 16px;
+  padding: 1rem;
+  background: #fffaf2;
+}
+
+.panel-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.muted {
+  margin: 0;
+  color: #6d5b49;
+}
+
+.nested-panel {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px dashed #d3c5b2;
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: #fff7ea;
+}
+
+.nested-panel p {
+  margin: 0;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  background: #ede2d2;
+  color: #4f3b2b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.form-grid label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  width: 100%;
+  border: 1px solid #cfc4b4;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+}
+
+.form-grid button,
+.button-row button {
+  width: fit-content;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  background: #31251b;
+  color: #fffaf2;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.form-grid button:disabled,
+.button-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.relation-fieldset {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid #ddd4c4;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.relation-fieldset legend {
+  padding: 0 0.35rem;
+  font-weight: 700;
+}
+
+.checkbox-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-weight: 500;
+}
+
+.case-management-grid {
+  display: grid;
+  grid-template-columns: minmax(14rem, 18rem) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.scope-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.scope-selector label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+}
+
+.scope-selector select {
+  width: 100%;
+  border: 1px solid #cfc4b4;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+}
+
+.item-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.list-button {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  border: 1px solid #ddd4c4;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list-button--active {
+  border-color: #31251b;
+  background: #31251b;
+  color: #fffaf2;
+}
+
+.list-button small {
+  opacity: 0.75;
+}
+
+@media (max-width: 760px) {
+  .case-management-grid,
+  .scope-selector {
+    grid-template-columns: 1fr;
+  }
+}
+
 .state-card {
   max-width: 42rem;
   margin-top: 1rem;

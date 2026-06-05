@@ -1,8 +1,14 @@
 import {
+  CASE_STATUSES,
   CORE_ENTITY_TYPES,
+  isCaseStatus,
   isCoreEntityType,
+  isIsoDateString,
+  type Case,
+  type Event,
   type IsoDateString,
   type TimelineEvent,
+  type Workspace,
 } from './types';
 
 describe('domain types', () => {
@@ -23,5 +29,29 @@ describe('domain types', () => {
 
   it('requires timeline events to have an occurrence time', () => {
     expectTypeOf<TimelineEvent['occurredAt']>().toEqualTypeOf<IsoDateString>();
+  });
+
+  it('lists the case statuses from the storage model', () => {
+    expect(CASE_STATUSES).toEqual(['draft', 'active', 'archived', 'deleted']);
+  });
+
+  it('checks whether a value is a case status', () => {
+    expect(isCaseStatus('active')).toBe(true);
+    expect(isCaseStatus('closed')).toBe(false);
+  });
+
+  it('checks structured ISO DateTime strings', () => {
+    expect(isIsoDateString('2026-06-01T12:30:00.000Z')).toBe(true);
+    expect(isIsoDateString('2026-06-01T20:30:00+08:00')).toBe(true);
+    expect(isIsoDateString('2026-06-01')).toBe(false);
+    expect(isIsoDateString('not a date')).toBe(false);
+  });
+
+  it('models soft deletion and separate story event time', () => {
+    expectTypeOf<Workspace['deletedAt']>().toEqualTypeOf<IsoDateString | null>();
+    expectTypeOf<Case['statusBeforeDelete']>().toEqualTypeOf<
+      'draft' | 'active' | 'archived' | null
+    >();
+    expectTypeOf<Event['occurredAt']>().toEqualTypeOf<IsoDateString>();
   });
 });

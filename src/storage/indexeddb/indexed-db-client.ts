@@ -2,7 +2,9 @@ import { StorageInitializationError } from '../storage-error';
 import {
   INDEXED_DB_NAME,
   INDEXED_DB_VERSION,
+  OBJECT_STORE_INDEXES,
   OBJECT_STORES,
+  type ObjectStoreName,
 } from './object-stores';
 
 export type OpenDatabase = (name: string, version: number) => IDBOpenDBRequest;
@@ -46,9 +48,8 @@ export class IndexedDbClient {
         const db = request.result;
 
         for (const storeName of OBJECT_STORES) {
-          if (!db.objectStoreNames.contains(storeName)) {
-            db.createObjectStore(storeName, { keyPath: 'id' });
-          }
+          const store = this.ensureObjectStore(db, request.transaction, storeName);
+          this.ensureIndexes(store, OBJECT_STORE_INDEXES[storeName]);
         }
       };
 
@@ -69,5 +70,39 @@ export class IndexedDbClient {
         resolve(request.result);
       };
     });
+  }
+
+  private ensureObjectStore(
+    db: IDBDatabase,
+    transaction: IDBTransaction | null,
+    storeName: ObjectStoreName,
+  ) {
+    if (!db.objectStoreNames.contains(storeName)) {
+      return db.createObjectStore(storeName, { keyPath: 'id' });
+    }
+
+    if (!transaction) {
+      throw new StorageInitializationError(
+        db.name,
+        new Error(`Cannot upgrade existing object store "${storeName}" without a transaction.`),
+      );
+    }
+
+    return transaction.objectStore(storeName);
+  }
+
+  private ensureIndexes(
+    store: IDBObjectStore,
+    indexDefinitions: (typeof OBJECT_STORE_INDEXES)[ObjectStoreName],
+  ) {
+    for (const indexDefinition of indexDefinitions) {
+      if (!store.indexNames.contains(indexDefinition.name)) {
+        store.createIndex(
+          indexDefinition.name,
+          indexDefinition.keyPath,
+          indexDefinition.options,
+        );
+      }
+    }
   }
 }

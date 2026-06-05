@@ -1,4 +1,5 @@
 import { RouterProvider } from 'react-router-dom';
+import { MurderBoardDataProvider } from '../shared/data/MurderBoardDataProvider';
 import { ErrorBoundary } from '../shared/state';
 import { createAppRouter } from './routes';
 
@@ -7,7 +8,9 @@ const router = createAppRouter();
 export function App() {
   return (
     <ErrorBoundary>
-      <RouterProvider router={router} />
+      <MurderBoardDataProvider>
+        <RouterProvider router={router} />
+      </MurderBoardDataProvider>
     </ErrorBoundary>
   );
 }
