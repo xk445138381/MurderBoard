@@ -8,3 +8,29 @@
 - [产品需求说明](docs/product-requirements.md)
 - [API 设计](docs/api-design.md)
 - [实现路线图](docs/implementation-roadmap.md)
+
+## Development
+
+Install dependencies:
+
+```powershell
+npm install
+```
+
+Run the local development server:
+
+```powershell
+npm run dev
+```
+
+Run the test suite:
+
+```powershell
+npm test
+```
+
+Build the app:
+
+```powershell
+npm run build
+```
