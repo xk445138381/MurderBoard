@@ -19,6 +19,24 @@ export type CaseStatus = (typeof CASE_STATUSES)[number];
 
 export type RestorableCaseStatus = Exclude<CaseStatus, 'deleted'>;
 
+export const BOARD_NODE_TYPES = ['person', 'clue', 'event', 'hypothesis'] as const;
+
+export type BoardNodeType = (typeof BOARD_NODE_TYPES)[number];
+
+export const BOARD_RELATION_TYPES = [
+  'related',
+  'supports',
+  'refutes',
+  'sequence',
+  'suspect',
+] as const;
+
+export type BoardRelationType = (typeof BOARD_RELATION_TYPES)[number];
+
+export const HYPOTHESIS_STATUSES = ['unverified', 'plausible', 'refuted'] as const;
+
+export type HypothesisStatus = (typeof HYPOTHESIS_STATUSES)[number];
+
 export interface SoftDeletableEntity {
   id: string;
   createdAt: IsoDateString;
@@ -60,6 +78,34 @@ export interface Event extends SoftDeletableEntity {
   title: string;
   description: string;
   occurredAt: IsoDateString;
+}
+
+export interface Hypothesis extends SoftDeletableEntity {
+  caseId: string;
+  title: string;
+  body: string;
+  status: HypothesisStatus;
+  confidence: number;
+}
+
+export interface BoardRelation extends SoftDeletableEntity {
+  caseId: string;
+  fromNodeType: BoardNodeType;
+  fromNodeId: string;
+  toNodeType: BoardNodeType;
+  toNodeId: string;
+  type: BoardRelationType;
+  note: string;
+}
+
+export interface BoardNodePosition {
+  id: string;
+  caseId: string;
+  nodeType: BoardNodeType;
+  nodeId: string;
+  x: number;
+  y: number;
+  updatedAt: IsoDateString;
 }
 
 export interface EventCharacter {
@@ -146,6 +192,18 @@ export function isCoreEntityType(value: string): value is CoreEntityType {
 
 export function isCaseStatus(value: string): value is CaseStatus {
   return CASE_STATUSES.includes(value as CaseStatus);
+}
+
+export function isBoardNodeType(value: string): value is BoardNodeType {
+  return BOARD_NODE_TYPES.includes(value as BoardNodeType);
+}
+
+export function isBoardRelationType(value: string): value is BoardRelationType {
+  return BOARD_RELATION_TYPES.includes(value as BoardRelationType);
+}
+
+export function isHypothesisStatus(value: string): value is HypothesisStatus {
+  return HYPOTHESIS_STATUSES.includes(value as HypothesisStatus);
 }
 
 export function isIsoDateString(value: string): value is IsoDateString {

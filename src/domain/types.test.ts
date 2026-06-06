@@ -1,8 +1,14 @@
 import {
+  BOARD_NODE_TYPES,
+  BOARD_RELATION_TYPES,
   CASE_STATUSES,
   CORE_ENTITY_TYPES,
+  HYPOTHESIS_STATUSES,
+  isBoardNodeType,
+  isBoardRelationType,
   isCaseStatus,
   isCoreEntityType,
+  isHypothesisStatus,
   isIsoDateString,
   type Case,
   type Event,
@@ -53,5 +59,35 @@ describe('domain types', () => {
       'draft' | 'active' | 'archived' | null
     >();
     expectTypeOf<Event['occurredAt']>().toEqualTypeOf<IsoDateString>();
+  });
+
+  describe('board domain types', () => {
+    it('defines the first-version board node types', () => {
+      expect(BOARD_NODE_TYPES).toEqual(['person', 'clue', 'event', 'hypothesis']);
+      expect(isBoardNodeType('person')).toBe(true);
+      expect(isBoardNodeType('clue')).toBe(true);
+      expect(isBoardNodeType('event')).toBe(true);
+      expect(isBoardNodeType('hypothesis')).toBe(true);
+      expect(isBoardNodeType('workspace')).toBe(false);
+    });
+
+    it('defines semantic board relation types', () => {
+      expect(BOARD_RELATION_TYPES).toEqual([
+        'related',
+        'supports',
+        'refutes',
+        'sequence',
+        'suspect',
+      ]);
+      expect(isBoardRelationType('supports')).toBe(true);
+      expect(isBoardRelationType('refutes')).toBe(true);
+      expect(isBoardRelationType('unknown')).toBe(false);
+    });
+
+    it('defines hypothesis statuses as player-owned reasoning states', () => {
+      expect(HYPOTHESIS_STATUSES).toEqual(['unverified', 'plausible', 'refuted']);
+      expect(isHypothesisStatus('unverified')).toBe(true);
+      expect(isHypothesisStatus('solved')).toBe(false);
+    });
   });
 });
