@@ -1,8 +1,9 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useBoardData } from './useBoardData';
 import { useWorkspaceCaseSelection } from '../../shared/data/useWorkspaceCaseSelection';
 import { useMurderBoardRepository } from '../../shared/data/MurderBoardDataProvider';
-import type { BoardNodeType, BoardRelationType } from '../../domain/types';
+import type { BoardNodeType, BoardRelationType, HypothesisStatus } from '../../domain/types';
+import type { BoardViewNode, BoardViewRelation } from './useBoardData';
 
 const NODE_TYPES: BoardNodeType[] = ['person', 'clue', 'event', 'hypothesis'];
 const RELATION_TYPES: BoardRelationType[] = ['related', 'supports', 'refutes', 'sequence', 'suspect'];
@@ -22,6 +23,12 @@ const RELATION_LABELS: Record<BoardRelationType, string> = {
   suspect: '嫌疑',
 };
 
+const HYPOTHESIS_STATUS_OPTIONS: { value: HypothesisStatus; label: string }[] = [
+  { value: 'unverified', label: '待验证' },
+  { value: 'plausible', label: '较可信' },
+  { value: 'refuted', label: '被反驳' },
+];
+
 export function BoardPage() {
   const repository = useMurderBoardRepository();
   const { isLoadingScope, selectedCaseId } = useWorkspaceCaseSelection();
@@ -40,10 +47,52 @@ export function BoardPage() {
   const [quickType, setQuickType] = useState<BoardNodeType>('clue');
   const [quickTitle, setQuickTitle] = useState('');
 
+  // --- Inspector edit state ---
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editBody, setEditBody] = useState('');
+  const [editStatus, setEditStatus] = useState<HypothesisStatus>('unverified');
+  const [editConfidence, setEditConfidence] = useState(50);
+  const [editRelType, setEditRelType] = useState<BoardRelationType>('related');
+  const [editRelNote, setEditRelNote] = useState('');
+
+  // --- Relation creation state ---
+  const [showRelationForm, setShowRelationForm] = useState(false);
+  const [relSourceNodeId, setRelSourceNodeId] = useState<string | null>(null);
+  const [relTargetNodeId, setRelTargetNodeId] = useState('');
+  const [relType, setRelType] = useState<BoardRelationType>('supports');
+  const [relNote, setRelNote] = useState('');
+
+  // --- Drag state ---
+  const [dragState, setDragState] = useState<{
+    nodeId: string;
+    nodeType: BoardNodeType;
+    baseX: number;
+    baseY: number;
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+    isDragging: boolean;
+  } | null>(null);
+  const dragRef = useRef<{
+    nodeId: string;
+    nodeType: BoardNodeType;
+    baseX: number;
+    baseY: number;
+    startX: number;
+    startY: number;
+    isDragging: boolean;
+  } | null>(null);
+  const isDraggedRef = useRef(false);
+
+  // --- Node lookup ---
   const nodeById = useMemo(
     () => new Map(nodes.map((node) => [node.id, node])),
     [nodes],
   );
+
+  // --- Matching / filtering ---
   const matchingNodeIds = useMemo(() => {
     const normalizedQuery = normalizeQuery(query);
 
@@ -70,16 +119,22 @@ export function BoardPage() {
   const selectedRelation =
     selectedRelationId ? relations.find((relation) => relation.id === selectedRelationId) ?? null : null;
 
+  // --- Selection ---
   function selectNode(nodeId: string) {
     setSelectedNodeId(nodeId);
     setSelectedRelationId(null);
+    setIsEditing(false);
+    setShowRelationForm(false);
   }
 
   function selectRelation(relationId: string) {
     setSelectedRelationId(relationId);
     setSelectedNodeId(null);
+    setIsEditing(false);
+    setShowRelationForm(false);
   }
 
+  // --- Quick add ---
   async function handleQuickAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -113,6 +168,196 @@ export function BoardPage() {
       // Repository error; board remains usable
     }
   }
+
+  // --- Inspector editing ---
+  function openEdit() {
+    if (selectedNode?.type === 'hypothesis') {
+      setEditTitle(selectedNode.title);
+      setEditBody(selectedNode.body);
+      setEditStatus(selectedNode.hypothesisStatus ?? 'unverified');
+      setEditConfidence(selectedNode.hypothesisConfidence ?? 50);
+      setIsEditing(true);
+    } else if (selectedRelation) {
+      setEditRelType(selectedRelation.type);
+      setEditRelNote(selectedRelation.note);
+      setIsEditing(true);
+    }
+  }
+
+  function cancelEdit() {
+    setIsEditing(false);
+  }
+
+  async function saveEdit() {
+    if (!selectedNodeId && !selectedRelationId) return;
+
+    try {
+      if (selectedNodeId && selectedNode?.type === 'hypothesis') {
+        await repository.updateHypothesis(selectedNodeId, {
+          title: editTitle,
+          body: editBody,
+          status: editStatus,
+          confidence: editConfidence,
+        });
+      } else if (selectedRelationId) {
+        await repository.updateBoardRelation(selectedRelationId, {
+          type: editRelType,
+          note: editRelNote,
+        });
+      }
+      setIsEditing(false);
+      void refresh();
+    } catch {
+      // Save error; board remains usable
+    }
+  }
+
+  // --- Relation creation ---
+  function openRelationForm(sourceNodeId: string) {
+    setRelSourceNodeId(sourceNodeId);
+    setRelTargetNodeId('');
+    setRelType('supports');
+    setRelNote('');
+    setShowRelationForm(true);
+    setIsEditing(false);
+  }
+
+  function cancelRelationForm() {
+    setShowRelationForm(false);
+  }
+
+  async function submitRelation() {
+    if (!selectedCaseId || !relSourceNodeId || !relTargetNodeId) return;
+
+    const sourceNode = nodeById.get(relSourceNodeId);
+    const targetNode = nodeById.get(relTargetNodeId);
+    if (!sourceNode || !targetNode) return;
+
+    try {
+      await repository.createBoardRelation(selectedCaseId, {
+        fromNodeType: sourceNode.type,
+        fromNodeId: sourceNode.id,
+        toNodeType: targetNode.type,
+        toNodeId: targetNode.id,
+        type: relType,
+        note: relNote || undefined,
+      });
+      setShowRelationForm(false);
+      void refresh();
+    } catch {
+      // Create error; board remains usable
+    }
+  }
+
+  // --- Drag ---
+  const handleNodePointerDown = useCallback((
+    nodeId: string,
+    nodeType: BoardNodeType,
+    x: number,
+    y: number,
+    e: React.PointerEvent,
+  ) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+
+    isDraggedRef.current = false;
+    const target = e.currentTarget as HTMLElement;
+    if (typeof target.setPointerCapture === 'function') {
+      target.setPointerCapture(e.pointerId);
+    }
+
+    dragRef.current = {
+      nodeId,
+      nodeType,
+      baseX: x,
+      baseY: y,
+      startX: e.clientX,
+      startY: e.clientY,
+      isDragging: false,
+    };
+
+    setDragState({
+      nodeId,
+      nodeType,
+      baseX: x,
+      baseY: y,
+      startX: e.clientX,
+      startY: e.clientY,
+      currentX: x,
+      currentY: y,
+      isDragging: false,
+    });
+  }, []);
+
+  const handleNodePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    e.preventDefault();
+
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    const isDragging = dragRef.current.isDragging || Math.abs(dx) > 5 || Math.abs(dy) > 5;
+
+    dragRef.current.isDragging = isDragging;
+    if (isDragging) {
+      isDraggedRef.current = true;
+    }
+
+    setDragState({
+      nodeId: dragRef.current.nodeId,
+      nodeType: dragRef.current.nodeType,
+      baseX: dragRef.current.baseX,
+      baseY: dragRef.current.baseY,
+      startX: dragRef.current.startX,
+      startY: dragRef.current.startY,
+      currentX: dragRef.current.baseX + dx,
+      currentY: dragRef.current.baseY + dy,
+      isDragging,
+    });
+  }, []);
+
+  const handleNodePointerUp = useCallback(async (e: React.PointerEvent) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+
+    const target = e.currentTarget as HTMLElement;
+    if (typeof target.releasePointerCapture === 'function') {
+      target.releasePointerCapture(e.pointerId);
+    }
+
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    const isDrag = Math.abs(dx) > 5 || Math.abs(dy) > 5;
+
+    dragRef.current = null;
+
+    if (isDrag && selectedCaseId) {
+      const finalX = Math.round(drag.baseX + dx);
+      const finalY = Math.round(drag.baseY + dy);
+
+      setDragState(null);
+
+      try {
+        await repository.saveBoardNodePosition(selectedCaseId, {
+          nodeType: drag.nodeType,
+          nodeId: drag.nodeId,
+          x: finalX,
+          y: finalY,
+        });
+        void refresh();
+      } catch {
+        // Position save error
+      }
+    } else {
+      setDragState(null);
+      // onClick handles node selection; do nothing here
+    }
+  }, [selectedCaseId, repository, refresh]);
+
+  // --- Relation form: available targets ---
+  const relationTargetOptions = useMemo(
+    () => nodes.filter((n) => n.id !== relSourceNodeId),
+    [nodes, relSourceNodeId],
+  );
 
   return (
     <section aria-labelledby="board-title" className="board-page">
@@ -229,16 +474,63 @@ export function BoardPage() {
             selectedNodeId,
             matchingNodeIds,
             selectedRelationId,
-            selectNode,
+            dragState,
+            handleNodePointerDown,
+            handleNodePointerMove,
+            handleNodePointerUp,
             selectRelation,
+            selectNode,
           )}
         </div>
 
         <aside className="board-inspector" aria-label="检查器">
-          {selectedRelation ? (
-            <RelationInspector relation={selectedRelation} nodeById={nodeById} />
+          {showRelationForm ? (
+            <RelationCreateForm
+              selectedCaseId={selectedCaseId}
+              sourceNodeId={relSourceNodeId}
+              targetNodeId={relTargetNodeId}
+              relationType={relType}
+              relationNote={relNote}
+              targetOptions={relationTargetOptions}
+              sourceNode={relSourceNodeId ? nodeById.get(relSourceNodeId) ?? null : null}
+              onSubmit={submitRelation}
+              onCancel={cancelRelationForm}
+              onTargetChange={setRelTargetNodeId}
+              onTypeChange={setRelType}
+              onNoteChange={setRelNote}
+            />
+          ) : selectedRelation ? (
+            <RelationInspector
+              relation={selectedRelation}
+              nodeById={nodeById}
+              isEditing={isEditing}
+              editRelType={editRelType}
+              editRelNote={editRelNote}
+              onEdit={openEdit}
+              onCancelEdit={cancelEdit}
+              onSave={saveEdit}
+              onRelTypeChange={setEditRelType}
+              onRelNoteChange={setEditRelNote}
+            />
           ) : selectedNode ? (
-            <NodeInspector node={selectedNode} relations={relations} nodeById={nodeById} />
+            <NodeInspector
+              node={selectedNode}
+              nodeById={nodeById}
+              relations={relations}
+              isEditing={isEditing && selectedNode.type === 'hypothesis'}
+              editTitle={editTitle}
+              editBody={editBody}
+              editStatus={editStatus}
+              editConfidence={editConfidence}
+              onEdit={selectedNode.type === 'hypothesis' ? openEdit : undefined}
+              onCancelEdit={cancelEdit}
+              onSave={saveEdit}
+              onTitleChange={setEditTitle}
+              onBodyChange={setEditBody}
+              onStatusChange={setEditStatus}
+              onConfidenceChange={setEditConfidence}
+              onRelationCreate={openRelationForm}
+            />
           ) : (
             <div className="inspector-empty">
               <p className="board-kicker">检查器</p>
@@ -252,43 +544,35 @@ export function BoardPage() {
   );
 }
 
+// --- Board Canvas ---
+
 function renderBoardContent(
   isLoadingScope: boolean,
   boardStatus: string,
   selectedCaseId: string | null,
   boardError: string | null,
-  nodes: Array<{
-    body: string;
-    id: string;
-    meta: string;
-    status: string;
-    title: string;
-    type: BoardNodeType;
-    x: number;
-    y: number;
-  }>,
-  nodeById: Map<string, {
-    body: string;
-    id: string;
-    meta: string;
-    status: string;
-    title: string;
-    type: BoardNodeType;
-    x: number;
-    y: number;
-  }>,
-  visibleRelations: Array<{
-    fromNodeId: string;
-    id: string;
-    note: string;
-    toNodeId: string;
-    type: BoardRelationType;
-  }>,
+  nodes: BoardViewNode[],
+  nodeById: Map<string, BoardViewNode>,
+  visibleRelations: BoardViewRelation[],
   selectedNodeId: string | null,
   matchingNodeIds: Set<string>,
   selectedRelationId: string | null,
-  selectNode: (nodeId: string) => void,
-  selectRelation: (relationId: string) => void,
+  dragState: {
+    nodeId: string;
+    nodeType: BoardNodeType;
+    baseX: number;
+    baseY: number;
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+    isDragging: boolean;
+  } | null,
+  onPointerDown: (nodeId: string, nodeType: BoardNodeType, x: number, y: number, e: React.PointerEvent) => void,
+  onPointerMove: (e: React.PointerEvent) => void,
+  onPointerUp: (e: React.PointerEvent) => void,
+  onSelectRelation: (relationId: string) => void,
+  onSelectNode: (nodeId: string) => void,
 ) {
   if (isLoadingScope || boardStatus === 'loading') {
     return (
@@ -367,7 +651,10 @@ function renderBoardContent(
             className={`relation-label relation-label--${relation.type}`}
             key={relation.id}
             aria-label={`选择${RELATION_LABELS[relation.type]}关系`}
-            onClick={() => selectRelation(relation.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectRelation(relation.id);
+            }}
             style={{
               left: `${(fromNode.x + toNode.x) / 2 + 60}px`,
               top: `${(fromNode.y + toNode.y) / 2 + 34}px`,
@@ -381,15 +668,26 @@ function renderBoardContent(
       {nodes.map((node) => {
         const isMatched = matchingNodeIds.has(node.id);
         const isSelected = node.id === selectedNodeId;
+        const dragNode = dragState?.nodeId === node.id ? dragState : null;
 
         return (
           <button
             className={`board-node board-node--${node.type} ${
               isSelected ? 'board-node--selected' : ''
-            } ${isMatched ? '' : 'board-node--dimmed'}`}
+            } ${isMatched ? '' : 'board-node--dimmed'} ${
+              dragNode?.isDragging ? 'board-node--dragging' : ''
+            }`}
             key={node.id}
-            onClick={() => selectNode(node.id)}
-            style={{ left: `${node.x}px`, top: `${node.y}px` }}
+            onClick={() => onSelectNode(node.id)}
+            onPointerDown={(e) => onPointerDown(node.id, node.type, node.x, node.y, e)}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            style={{
+              left: `${dragNode?.currentX ?? node.x}px`,
+              top: `${dragNode?.currentY ?? node.y}px`,
+              touchAction: 'none',
+              cursor: dragNode?.isDragging ? 'grabbing' : 'grab',
+            }}
             type="button"
           >
             <span className="board-node-type">{NODE_TYPE_LABELS[node.type]}</span>
@@ -404,40 +702,88 @@ function renderBoardContent(
   );
 }
 
+// --- Node Inspector ---
+
 interface NodeInspectorProps {
-  node: {
-    body: string;
-    id: string;
-    meta: string;
-    status: string;
-    title: string;
-    type: BoardNodeType;
-    x: number;
-    y: number;
-  };
-  nodeById: Map<string, {
-    body: string;
-    id: string;
-    meta: string;
-    status: string;
-    title: string;
-    type: BoardNodeType;
-    x: number;
-    y: number;
-  }>;
-  relations: Array<{
-    fromNodeId: string;
-    id: string;
-    note: string;
-    toNodeId: string;
-    type: BoardRelationType;
-  }>;
+  node: BoardViewNode;
+  nodeById: Map<string, BoardViewNode>;
+  relations: BoardViewRelation[];
+  isEditing: boolean;
+  editTitle: string;
+  editBody: string;
+  editStatus: HypothesisStatus;
+  editConfidence: number;
+  onEdit?: () => void;
+  onCancelEdit: () => void;
+  onSave: () => void;
+  onTitleChange: (v: string) => void;
+  onBodyChange: (v: string) => void;
+  onStatusChange: (v: HypothesisStatus) => void;
+  onConfidenceChange: (v: number) => void;
+  onRelationCreate?: (sourceNodeId: string) => void;
 }
 
-function NodeInspector({ node, nodeById, relations }: NodeInspectorProps) {
+function NodeInspector({
+  node,
+  nodeById,
+  relations,
+  isEditing,
+  editTitle,
+  editBody,
+  editStatus,
+  editConfidence,
+  onEdit,
+  onCancelEdit,
+  onSave,
+  onTitleChange,
+  onBodyChange,
+  onStatusChange,
+  onConfidenceChange,
+  onRelationCreate,
+}: NodeInspectorProps) {
   const relatedRelations = relations.filter(
     (relation) => relation.fromNodeId === node.id || relation.toNodeId === node.id,
   );
+
+  if (isEditing) {
+    return (
+      <div className="inspector-content">
+        <p className="board-kicker">编辑 {NODE_TYPE_LABELS[node.type]}</p>
+        <div className="inspector-edit">
+          <label>
+            标题
+            <input value={editTitle} onChange={(e) => onTitleChange(e.target.value)} />
+          </label>
+          <label>
+            详情
+            <textarea value={editBody} onChange={(e) => onBodyChange(e.target.value)} rows={3} />
+          </label>
+          <label>
+            状态
+            <select value={editStatus} onChange={(e) => onStatusChange(e.target.value as HypothesisStatus)}>
+              {HYPOTHESIS_STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            可信度: {editConfidence}%
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={editConfidence}
+              onChange={(e) => onConfidenceChange(Number(e.target.value))}
+            />
+          </label>
+          <div className="inspector-edit-actions">
+            <button className="inspector-save-btn" onClick={onSave} type="button">保存</button>
+            <button className="inspector-cancel-btn" onClick={onCancelEdit} type="button">取消</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="inspector-content">
@@ -448,13 +794,16 @@ function NodeInspector({ node, nodeById, relations }: NodeInspectorProps) {
           <dt>可信度</dt>
           <dd>
             <span className="confidence-track">
-              <span className="confidence-fill" />
+              <span
+                className="confidence-fill"
+                style={{ width: `${node.hypothesisConfidence ?? 50}%` }}
+              />
             </span>
           </dd>
         </div>
         <div>
           <dt>状态</dt>
-          <dd>{node.status}</dd>
+          <dd>{node.meta}</dd>
         </div>
         <div>
           <dt>详情</dt>
@@ -476,36 +825,77 @@ function NodeInspector({ node, nodeById, relations }: NodeInspectorProps) {
           );
         })}
       </section>
-      <button className="inspector-primary-action" type="button">
-        继续关联线索
-      </button>
+      <div className="inspector-actions">
+        {onEdit ? (
+          <button className="inspector-primary-action" onClick={onEdit} type="button">
+            编辑猜想
+          </button>
+        ) : null}
+        {onRelationCreate ? (
+          <button className="inspector-secondary-action" onClick={() => onRelationCreate(node.id)} type="button">
+            继续关联线索
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
 
+// --- Relation Inspector ---
+
 interface RelationInspectorProps {
-  nodeById: Map<string, {
-    body: string;
-    id: string;
-    meta: string;
-    status: string;
-    title: string;
-    type: BoardNodeType;
-    x: number;
-    y: number;
-  }>;
-  relation: {
-    fromNodeId: string;
-    id: string;
-    note: string;
-    toNodeId: string;
-    type: BoardRelationType;
-  };
+  nodeById: Map<string, BoardViewNode>;
+  relation: BoardViewRelation;
+  isEditing: boolean;
+  editRelType: BoardRelationType;
+  editRelNote: string;
+  onEdit: () => void;
+  onCancelEdit: () => void;
+  onSave: () => void;
+  onRelTypeChange: (v: BoardRelationType) => void;
+  onRelNoteChange: (v: string) => void;
 }
 
-function RelationInspector({ nodeById, relation }: RelationInspectorProps) {
+function RelationInspector({
+  nodeById,
+  relation,
+  isEditing,
+  editRelType,
+  editRelNote,
+  onEdit,
+  onCancelEdit,
+  onSave,
+  onRelTypeChange,
+  onRelNoteChange,
+}: RelationInspectorProps) {
   const fromNode = nodeById.get(relation.fromNodeId);
   const toNode = nodeById.get(relation.toNodeId);
+
+  if (isEditing) {
+    return (
+      <div className="inspector-content">
+        <p className="board-kicker">编辑关系</p>
+        <div className="inspector-edit">
+          <label>
+            关系类型
+            <select value={editRelType} onChange={(e) => onRelTypeChange(e.target.value as BoardRelationType)}>
+              {RELATION_TYPES.map((rt) => (
+                <option key={rt} value={rt}>{RELATION_LABELS[rt]}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            备注
+            <textarea value={editRelNote} onChange={(e) => onRelNoteChange(e.target.value)} rows={3} />
+          </label>
+          <div className="inspector-edit-actions">
+            <button className="inspector-save-btn" onClick={onSave} type="button">保存</button>
+            <button className="inspector-cancel-btn" onClick={onCancelEdit} type="button">取消</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="inspector-content">
@@ -525,6 +915,112 @@ function RelationInspector({ nodeById, relation }: RelationInspectorProps) {
           <dd>{relation.note}</dd>
         </div>
       </dl>
+      <div className="inspector-actions">
+        <button className="inspector-primary-action" onClick={onEdit} type="button">
+          编辑关系
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// --- Relation Create Form ---
+
+interface RelationCreateFormProps {
+  selectedCaseId: string | null;
+  sourceNodeId: string | null;
+  targetNodeId: string;
+  relationType: BoardRelationType;
+  relationNote: string;
+  targetOptions: BoardViewNode[];
+  sourceNode: BoardViewNode | null;
+  onSubmit: () => void;
+  onCancel: () => void;
+  onTargetChange: (v: string) => void;
+  onTypeChange: (v: BoardRelationType) => void;
+  onNoteChange: (v: string) => void;
+}
+
+function RelationCreateForm({
+  selectedCaseId,
+  sourceNodeId,
+  targetNodeId,
+  relationType,
+  relationNote,
+  targetOptions,
+  sourceNode,
+  onSubmit,
+  onCancel,
+  onTargetChange,
+  onTypeChange,
+  onNoteChange,
+}: RelationCreateFormProps) {
+  if (!selectedCaseId) {
+    return (
+      <div className="inspector-empty">
+        <p className="board-kicker">建立关系</p>
+        <h2>请先选择案件</h2>
+      </div>
+    );
+  }
+
+  if (!sourceNodeId) {
+    return (
+      <div className="inspector-empty">
+        <p className="board-kicker">建立关系</p>
+        <h2>请先选择一个节点</h2>
+      </div>
+    );
+  }
+
+  return (
+    <div className="inspector-content">
+      <p className="board-kicker">建立关系</p>
+      <h2>关联节点</h2>
+      <dl className="inspector-fields">
+        <div>
+          <dt>来源</dt>
+          <dd>{sourceNode?.title ?? '未知'}</dd>
+        </div>
+      </dl>
+      <div className="inspector-edit">
+        <label>
+          目标节点
+          <select value={targetNodeId} onChange={(e) => onTargetChange(e.target.value)}>
+            <option value="">选择目标节点</option>
+            {targetOptions.map((n) => (
+              <option key={n.id} value={n.id}>
+                [{NODE_TYPE_LABELS[n.type]}] {n.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          关系类型
+          <select value={relationType} onChange={(e) => onTypeChange(e.target.value as BoardRelationType)}>
+            {RELATION_TYPES.map((rt) => (
+              <option key={rt} value={rt}>{RELATION_LABELS[rt]}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          备注
+          <textarea value={relationNote} onChange={(e) => onNoteChange(e.target.value)} rows={3} placeholder="描述这条关系的依据" />
+        </label>
+        <div className="inspector-edit-actions">
+          <button
+            className="inspector-save-btn"
+            disabled={!targetNodeId}
+            onClick={onSubmit}
+            type="button"
+          >
+            确认建立
+          </button>
+          <button className="inspector-cancel-btn" onClick={onCancel} type="button">
+            取消
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

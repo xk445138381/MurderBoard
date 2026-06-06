@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { BoardNodeType, BoardRelationType } from '../../domain/types';
+import type { BoardNodeType, BoardRelationType, HypothesisStatus } from '../../domain/types';
 import { useMurderBoardRepository } from '../../shared/data/MurderBoardDataProvider';
 import { formatActionError } from '../../shared/data/useWorkspaceCaseSelection';
 
@@ -12,6 +12,8 @@ export interface BoardViewNode {
   type: BoardNodeType;
   x: number;
   y: number;
+  hypothesisStatus?: HypothesisStatus;
+  hypothesisConfidence?: number;
 }
 
 export interface BoardViewRelation {
@@ -59,7 +61,18 @@ export function useBoardData(caseId: string | null) {
         ...characters.map((character, index) => toBoardNode('person', character.id, character.name, character.role, character.notes, '已记录', index, positionByNode)),
         ...clues.map((clue, index) => toBoardNode('clue', clue.id, clue.title, clue.source, clue.content, '线索', index + characters.length, positionByNode)),
         ...events.map((event, index) => toBoardNode('event', event.id, event.title, event.occurredAt, event.description, '事件', index + characters.length + clues.length, positionByNode)),
-        ...hypotheses.map((hypothesis, index) => toBoardNode('hypothesis', hypothesis.id, hypothesis.title, statusLabel(hypothesis.status), hypothesis.body, `${hypothesis.confidence}%`, index + characters.length + clues.length + events.length, positionByNode)),
+        ...hypotheses.map((hypothesis, index) => toBoardNode(
+          'hypothesis',
+          hypothesis.id,
+          hypothesis.title,
+          statusLabel(hypothesis.status),
+          hypothesis.body,
+          `${hypothesis.confidence}%`,
+          index + characters.length + clues.length + events.length,
+          positionByNode,
+          hypothesis.status,
+          hypothesis.confidence,
+        )),
       ];
 
       setNodes(nextNodes);
@@ -98,6 +111,8 @@ function toBoardNode(
   status: string,
   index: number,
   positionByNode: Map<string, { x: number; y: number }>,
+  hypothesisStatus?: HypothesisStatus,
+  hypothesisConfidence?: number,
 ): BoardViewNode {
   const position = positionByNode.get(`${type}:${id}`);
   return {
@@ -109,6 +124,8 @@ function toBoardNode(
     type,
     x: position?.x ?? 96 + (index % 3) * 272,
     y: position?.y ?? 96 + Math.floor(index / 3) * 156,
+    ...(hypothesisStatus ? { hypothesisStatus } : {}),
+    ...(hypothesisConfidence !== undefined ? { hypothesisConfidence } : {}),
   };
 }
 
