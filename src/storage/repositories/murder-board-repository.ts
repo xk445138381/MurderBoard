@@ -1,4 +1,8 @@
 import type {
+  BoardNodePosition,
+  BoardNodeType,
+  BoardRelation,
+  BoardRelationType,
   Case,
   CaseStatus,
   Character,
@@ -6,6 +10,8 @@ import type {
   Event,
   EventCharacter,
   EventClue,
+  Hypothesis,
+  HypothesisStatus,
   IsoDateString,
   RestorableCaseStatus,
   Workspace,
@@ -73,6 +79,41 @@ export interface UpdateEventInput {
   occurredAt?: IsoDateString;
   relatedCharacterIds?: string[];
   relatedClueIds?: string[];
+}
+
+export interface CreateHypothesisInput {
+  title: string;
+  body?: string;
+  status?: HypothesisStatus;
+  confidence?: number;
+}
+
+export interface UpdateHypothesisInput {
+  title?: string;
+  body?: string;
+  status?: HypothesisStatus;
+  confidence?: number;
+}
+
+export interface CreateBoardRelationInput {
+  fromNodeType: BoardNodeType;
+  fromNodeId: string;
+  toNodeType: BoardNodeType;
+  toNodeId: string;
+  type: BoardRelationType;
+  note?: string;
+}
+
+export interface UpdateBoardRelationInput {
+  type?: BoardRelationType;
+  note?: string;
+}
+
+export interface SaveBoardNodePositionInput {
+  nodeType: BoardNodeType;
+  nodeId: string;
+  x: number;
+  y: number;
 }
 
 export interface CaseListOptions {
@@ -205,6 +246,25 @@ export interface MurderBoardRepository {
   purgeEvent(id: string): Promise<void>;
   listEventCharacters(eventId: string): Promise<EventCharacter[]>;
   listEventClues(eventId: string): Promise<EventClue[]>;
+
+  createHypothesis(caseId: string, input: CreateHypothesisInput): Promise<Hypothesis>;
+  listHypotheses(caseId: string, options?: { includeDeleted?: boolean }): Promise<Hypothesis[]>;
+  updateHypothesis(id: string, input: UpdateHypothesisInput): Promise<Hypothesis>;
+  softDeleteHypothesis(id: string): Promise<Hypothesis>;
+  restoreHypothesis(id: string): Promise<Hypothesis>;
+  purgeHypothesis(id: string): Promise<void>;
+
+  createBoardRelation(caseId: string, input: CreateBoardRelationInput): Promise<BoardRelation>;
+  listBoardRelations(caseId: string, options?: { includeDeleted?: boolean }): Promise<BoardRelation[]>;
+  updateBoardRelation(id: string, input: UpdateBoardRelationInput): Promise<BoardRelation>;
+  softDeleteBoardRelation(id: string): Promise<BoardRelation>;
+  purgeBoardRelation(id: string): Promise<void>;
+
+  saveBoardNodePosition(
+    caseId: string,
+    input: SaveBoardNodePositionInput,
+  ): Promise<BoardNodePosition>;
+  listBoardNodePositions(caseId: string): Promise<BoardNodePosition[]>;
 
   listTrashEntries(): Promise<TrashEntry[]>;
   restoreTrashEntry(resourceType: TrashResourceType, resourceId: string): Promise<void>;

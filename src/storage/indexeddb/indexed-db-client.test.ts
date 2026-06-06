@@ -38,6 +38,18 @@ describe('IndexedDbClient', () => {
     db.close();
   });
 
+  it('creates board stores required by the cases board MVP', async () => {
+    const client = new IndexedDbClient({
+      dbName: `murderboard-test-${crypto.randomUUID()}`,
+    });
+
+    const db = await client.init();
+
+    expect([...db.objectStoreNames]).toEqual(
+      expect.arrayContaining(['hypotheses', 'boardRelations', 'boardNodePositions']),
+    );
+  });
+
   it('surfaces initialization failures with database context', async () => {
     const client = new IndexedDbClient({
       dbName: 'murderboard-failing-test',

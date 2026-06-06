@@ -872,4 +872,94 @@ describe('IndexedDbMurderBoardRepository', () => {
 
     await closeClient(client);
   });
+
+  it('creates updates soft deletes and restores hypotheses', async () => {
+    const { client, repository } = createRepository();
+    const workspace = await repository.createWorkspace({ name: '渡鸦宅邸' });
+    const caseRecord = await repository.createCase(workspace.id, { name: '第一幕', status: 'active' });
+
+    const hypothesis = await repository.createHypothesis(caseRecord.id, {
+      title: '现场被提前布置',
+      body: '房间可能在众人进入前就已经被布置过。',
+    });
+
+    expect(hypothesis.status).toBe('unverified');
+    expect(hypothesis.confidence).toBe(50);
+
+    const updated = await repository.updateHypothesis(hypothesis.id, {
+      status: 'plausible',
+      confidence: 70,
+    });
+    expect(updated.status).toBe('plausible');
+    expect(updated.confidence).toBe(70);
+
+    await repository.softDeleteHypothesis(hypothesis.id);
+    await expect(repository.listHypotheses(caseRecord.id)).resolves.toEqual([]);
+    await expect(repository.listHypotheses(caseRecord.id, { includeDeleted: true })).resolves.toHaveLength(1);
+
+    const restored = await repository.restoreHypothesis(hypothesis.id);
+    expect(restored.deletedAt).toBeNull();
+    await expect(repository.listHypotheses(caseRecord.id)).resolves.toHaveLength(1);
+
+    await closeClient(client);
+  });
+
+  it('only creates board relations between valid nodes in the same case', async () => {
+    const { client, repository } = createRepository();
+    const workspace = await repository.createWorkspace({ name: '渡鸦宅邸' });
+    const caseA = await repository.createCase(workspace.id, { name: '第一幕', status: 'active' });
+    const caseB = await repository.createCase(workspace.id, { name: '第二幕', status: 'active' });
+    const clue = await repository.createClue(caseA.id, { title: '停摆怀表' });
+    const hypothesis = await repository.createHypothesis(caseA.id, { title: '现场被提前布置' });
+    const otherHypothesis = await repository.createHypothesis(caseB.id, { title: '另一个案件的猜想' });
+
+    await expect(
+      repository.createBoardRelation(caseA.id, {
+        fromNodeType: 'clue',
+        fromNodeId: clue.id,
+        toNodeType: 'hypothesis',
+        toNodeId: hypothesis.id,
+        type: 'supports',
+        note: '停摆时间支持提前布置。',
+      }),
+    ).resolves.toMatchObject({ type: 'supports', note: '停摆时间支持提前布置。' });
+
+    await expect(
+      repository.createBoardRelation(caseA.id, {
+        fromNodeType: 'clue',
+        fromNodeId: clue.id,
+        toNodeType: 'hypothesis',
+        toNodeId: otherHypothesis.id,
+        type: 'supports',
+      }),
+    ).rejects.toThrow(/same case/i);
+
+    await closeClient(client);
+  });
+
+  it('saves and replaces board node positions per case node', async () => {
+    const { client, repository } = createRepository();
+    const workspace = await repository.createWorkspace({ name: '渡鸦宅邸' });
+    const caseRecord = await repository.createCase(workspace.id, { name: '第一幕', status: 'active' });
+    const character = await repository.createCharacter(caseRecord.id, { name: '林乔' });
+
+    await repository.saveBoardNodePosition(caseRecord.id, {
+      nodeType: 'person',
+      nodeId: character.id,
+      x: 80,
+      y: 120,
+    });
+    await repository.saveBoardNodePosition(caseRecord.id, {
+      nodeType: 'person',
+      nodeId: character.id,
+      x: 160,
+      y: 240,
+    });
+
+    await expect(repository.listBoardNodePositions(caseRecord.id)).resolves.toMatchObject([
+      { nodeType: 'person', nodeId: character.id, x: 160, y: 240 },
+    ]);
+
+    await closeClient(client);
+  });
 });

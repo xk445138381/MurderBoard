@@ -1,6 +1,9 @@
 import {
   isCaseStatus,
   isIsoDateString,
+  type BoardNodePosition,
+  type BoardNodeType,
+  type BoardRelation,
   type Case,
   type CaseStatus,
   type Character,
@@ -8,6 +11,7 @@ import {
   type Event as CaseEvent,
   type EventCharacter,
   type EventClue,
+  type Hypothesis,
   type IsoDateString,
   type RestorableCaseStatus,
   type Workspace,
@@ -18,20 +22,25 @@ import type {
   CaseImportPreview,
   CaseListOptions,
   CopyCaseInput,
+  CreateBoardRelationInput,
   CreateCaseInput,
   CreateCharacterInput,
   CreateClueInput,
   CreateEventInput,
+  CreateHypothesisInput,
   CreateWorkspaceInput,
   MoveCaseInput,
   MurderBoardRepository,
   RestoreArchivedCaseInput,
+  SaveBoardNodePositionInput,
   TrashEntry,
   TrashResourceType,
+  UpdateBoardRelationInput,
   UpdateCaseInput,
   UpdateCharacterInput,
   UpdateClueInput,
   UpdateEventInput,
+  UpdateHypothesisInput,
   UpdateWorkspaceInput,
 } from '../repositories';
 import {
@@ -57,7 +66,10 @@ type StoredRecord =
   | Clue
   | CaseEvent
   | EventCharacter
-  | EventClue;
+  | EventClue
+  | Hypothesis
+  | BoardRelation
+  | BoardNodePosition;
 
 type IndexedDbWriteRequest = IDBRequest<IDBValidKey> | IDBRequest<undefined>;
 
@@ -925,6 +937,187 @@ export class IndexedDbMurderBoardRepository implements MurderBoardRepository {
     return this.getAllByIndex<EventClue>('eventClues', 'eventId', eventId);
   }
 
+  async createHypothesis(caseId: string, input: CreateHypothesisInput): Promise<Hypothesis> {
+    await this.requireCase(caseId);
+
+    const timestamp = this.currentTimestamp();
+    const hypothesis: Hypothesis = {
+      id: this.idFactory(),
+      caseId,
+      title: requireText(input.title, 'hypothesisTitle'),
+      body: normalizeOptionalText(input.body),
+      status: input.status ?? 'unverified',
+      confidence: input.confidence ?? 50,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      deletedAt: null,
+    };
+
+    if (hypothesis.confidence < 0 || hypothesis.confidence > 100) {
+      throw new StorageValidationError('hypothesis confidence must be between 0 and 100.', {
+        fieldName: 'confidence',
+        value: String(hypothesis.confidence),
+      });
+    }
+
+    await this.addRecord('hypotheses', hypothesis);
+    return hypothesis;
+  }
+
+  async listHypotheses(
+    caseId: string,
+    options: { includeDeleted?: boolean } = {},
+  ): Promise<Hypothesis[]> {
+    const hypotheses = await this.getAllByIndex<Hypothesis>('hypotheses', 'caseId', caseId);
+    return hypotheses
+      .filter((hypothesis) => options.includeDeleted || !hypothesis.deletedAt)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
+
+  async updateHypothesis(id: string, input: UpdateHypothesisInput): Promise<Hypothesis> {
+    const hypothesis = await this.requireHypothesisById(id);
+    const confidence = input.confidence ?? hypothesis.confidence;
+
+    if (confidence < 0 || confidence > 100) {
+      throw new StorageValidationError('hypothesis confidence must be between 0 and 100.', {
+        fieldName: 'confidence',
+        value: String(confidence),
+      });
+    }
+
+    const updatedHypothesis: Hypothesis = {
+      ...hypothesis,
+      title: input.title === undefined ? hypothesis.title : requireText(input.title, 'hypothesisTitle'),
+      body: input.body === undefined ? hypothesis.body : normalizeOptionalText(input.body),
+      status: input.status ?? hypothesis.status,
+      confidence,
+      updatedAt: this.currentTimestamp(),
+    };
+
+    await this.putRecord('hypotheses', updatedHypothesis);
+    return updatedHypothesis;
+  }
+
+  async softDeleteHypothesis(id: string): Promise<Hypothesis> {
+    const hypothesis = await this.requireHypothesisById(id);
+    const timestamp = this.currentTimestamp();
+    const deletedHypothesis: Hypothesis = {
+      ...hypothesis,
+      updatedAt: timestamp,
+      deletedAt: timestamp,
+    };
+
+    await this.putRecord('hypotheses', deletedHypothesis);
+    return deletedHypothesis;
+  }
+
+  async restoreHypothesis(id: string): Promise<Hypothesis> {
+    const hypothesis = await this.requireDeletedRecord<Hypothesis>('hypotheses', 'Hypothesis', id);
+    await this.requireCase(hypothesis.caseId);
+
+    const restoredHypothesis: Hypothesis = {
+      ...hypothesis,
+      updatedAt: this.currentTimestamp(),
+      deletedAt: null,
+    };
+
+    await this.putRecord('hypotheses', restoredHypothesis);
+    return restoredHypothesis;
+  }
+
+  async purgeHypothesis(id: string): Promise<void> {
+    await this.requireDeletedRecord<Hypothesis>('hypotheses', 'Hypothesis', id);
+    await this.deleteRecord('hypotheses', id);
+  }
+
+  async createBoardRelation(caseId: string, input: CreateBoardRelationInput): Promise<BoardRelation> {
+    await this.requireCase(caseId);
+    await this.requireBoardNode(caseId, input.fromNodeType, input.fromNodeId);
+    await this.requireBoardNode(caseId, input.toNodeType, input.toNodeId);
+
+    const timestamp = this.currentTimestamp();
+    const relation: BoardRelation = {
+      id: this.idFactory(),
+      caseId,
+      fromNodeType: input.fromNodeType,
+      fromNodeId: input.fromNodeId,
+      toNodeType: input.toNodeType,
+      toNodeId: input.toNodeId,
+      type: input.type,
+      note: normalizeOptionalText(input.note),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      deletedAt: null,
+    };
+
+    await this.addRecord('boardRelations', relation);
+    return relation;
+  }
+
+  async listBoardRelations(
+    caseId: string,
+    options: { includeDeleted?: boolean } = {},
+  ): Promise<BoardRelation[]> {
+    const relations = await this.getAllByIndex<BoardRelation>('boardRelations', 'caseId', caseId);
+    return relations.filter((relation) => options.includeDeleted || !relation.deletedAt);
+  }
+
+  async updateBoardRelation(id: string, input: UpdateBoardRelationInput): Promise<BoardRelation> {
+    const relation = await this.requireBoardRelationById(id);
+    const updatedRelation: BoardRelation = {
+      ...relation,
+      type: input.type ?? relation.type,
+      note: input.note === undefined ? relation.note : normalizeOptionalText(input.note),
+      updatedAt: this.currentTimestamp(),
+    };
+
+    await this.putRecord('boardRelations', updatedRelation);
+    return updatedRelation;
+  }
+
+  async softDeleteBoardRelation(id: string): Promise<BoardRelation> {
+    const relation = await this.requireBoardRelationById(id);
+    const timestamp = this.currentTimestamp();
+    const deletedRelation: BoardRelation = {
+      ...relation,
+      updatedAt: timestamp,
+      deletedAt: timestamp,
+    };
+
+    await this.putRecord('boardRelations', deletedRelation);
+    return deletedRelation;
+  }
+
+  async purgeBoardRelation(id: string): Promise<void> {
+    await this.requireDeletedRecord<BoardRelation>('boardRelations', 'BoardRelation', id);
+    await this.deleteRecord('boardRelations', id);
+  }
+
+  async saveBoardNodePosition(
+    caseId: string,
+    input: SaveBoardNodePositionInput,
+  ): Promise<BoardNodePosition> {
+    await this.requireCase(caseId);
+
+    const id = `${caseId}:${input.nodeType}:${input.nodeId}`;
+    const position: BoardNodePosition = {
+      id,
+      caseId,
+      nodeType: input.nodeType,
+      nodeId: input.nodeId,
+      x: input.x,
+      y: input.y,
+      updatedAt: this.currentTimestamp(),
+    };
+
+    await this.putRecord('boardNodePositions', position);
+    return position;
+  }
+
+  async listBoardNodePositions(caseId: string): Promise<BoardNodePosition[]> {
+    return this.getAllByIndex<BoardNodePosition>('boardNodePositions', 'caseId', caseId);
+  }
+
   async listTrashEntries(): Promise<TrashEntry[]> {
     const [workspaces, cases, characters, clues, events] = await Promise.all([
       this.getAllRecords<Workspace>('workspaces'),
@@ -1106,6 +1299,71 @@ export class IndexedDbMurderBoardRepository implements MurderBoardRepository {
     }
 
     return event;
+  }
+
+  private async requireHypothesisById(id: string): Promise<Hypothesis> {
+    const hypothesis = await this.getRecord<Hypothesis>('hypotheses', id);
+    if (!hypothesis || hypothesis.deletedAt) {
+      throw new StorageNotFoundError('Hypothesis', id);
+    }
+
+    return hypothesis;
+  }
+
+  private async requireBoardRelationById(id: string): Promise<BoardRelation> {
+    const relation = await this.getRecord<BoardRelation>('boardRelations', id);
+    if (!relation || relation.deletedAt) {
+      throw new StorageNotFoundError('BoardRelation', id);
+    }
+
+    return relation;
+  }
+
+  private async requireBoardNode(caseId: string, nodeType: BoardNodeType, nodeId: string) {
+    if (nodeType === 'person') {
+      const record = await this.getRecord<Character>('characters', nodeId);
+      if (!record || record.deletedAt || record.caseId !== caseId) {
+        throw new StorageValidationError('Board relation nodes must exist in the same case.', {
+          caseId,
+          nodeType,
+          nodeId,
+        });
+      }
+      return;
+    }
+
+    if (nodeType === 'clue') {
+      const record = await this.getRecord<Clue>('clues', nodeId);
+      if (!record || record.deletedAt || record.caseId !== caseId) {
+        throw new StorageValidationError('Board relation nodes must exist in the same case.', {
+          caseId,
+          nodeType,
+          nodeId,
+        });
+      }
+      return;
+    }
+
+    if (nodeType === 'event') {
+      const record = await this.getRecord<CaseEvent>('events', nodeId);
+      if (!record || record.deletedAt || record.caseId !== caseId) {
+        throw new StorageValidationError('Board relation nodes must exist in the same case.', {
+          caseId,
+          nodeType,
+          nodeId,
+        });
+      }
+      return;
+    }
+
+    const record = await this.getRecord<Hypothesis>('hypotheses', nodeId);
+    if (!record || record.deletedAt || record.caseId !== caseId) {
+      throw new StorageValidationError('Board relation nodes must exist in the same case.', {
+        caseId,
+        nodeType,
+        nodeId,
+      });
+    }
   }
 
   private async assertWorkspaceNameAvailable(name: string, exceptId?: string) {
