@@ -1218,6 +1218,29 @@ a {
   color: #f0a09a;
 }
 
+@media (max-width: 1080px) {
+  .board-workbench {
+    grid-template-columns: 15rem 1fr;
+    height: auto;
+  }
+
+  .board-inspector {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .board-workbench {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .case-board {
+    min-height: 38rem;
+    overflow: auto;
+  }
+}
+
 .board-empty-state {
   display: flex;
   flex-direction: column;
@@ -1238,6 +1261,25 @@ a {
   margin: 0.25rem 0 0;
   color: #82919b;
   max-width: 24rem;
+}
+
+.board-empty-cta {
+  margin-top: 1.25rem;
+  padding: 0.65rem 1.5rem;
+  border: 0;
+  border-radius: 10px;
+  background: #e8c46a;
+  color: #11171c;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quick-capture-form button:disabled,
+.quick-capture-form select:disabled,
+.quick-capture-form input:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .inspector-edit {

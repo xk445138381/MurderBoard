@@ -31,7 +31,7 @@ const HYPOTHESIS_STATUS_OPTIONS: { value: HypothesisStatus; label: string }[] = 
 
 export function BoardPage() {
   const repository = useMurderBoardRepository();
-  const { isLoadingScope, selectedCaseId } = useWorkspaceCaseSelection();
+  const { isLoadingScope, refreshScope, selectedCaseId } = useWorkspaceCaseSelection();
   const {
     error: boardError,
     nodes,
@@ -353,6 +353,25 @@ export function BoardPage() {
     }
   }, [selectedCaseId, repository, refresh]);
 
+  // --- Create default case ---
+  async function handleCreateDefaultCase() {
+    try {
+      const workspaces = await repository.listWorkspaces();
+      let workspaceId = workspaces[0]?.id;
+      if (!workspaceId) {
+        const workspace = await repository.createWorkspace({ name: '默认工作区' });
+        workspaceId = workspace.id;
+      }
+      const caseRecord = await repository.createCase(workspaceId, {
+        name: '我的案件',
+        status: 'active',
+      });
+      await refreshScope(workspaceId, caseRecord.id);
+    } catch {
+      // Creation error; board remains usable
+    }
+  }
+
   // --- Relation form: available targets ---
   const relationTargetOptions = useMemo(
     () => nodes.filter((n) => n.id !== relSourceNodeId),
@@ -409,6 +428,7 @@ export function BoardPage() {
           <form className="quick-capture-form" onSubmit={handleQuickAdd}>
             <label htmlFor="quick-node-type">类型</label>
             <select
+              disabled={!selectedCaseId}
               id="quick-node-type"
               onChange={(event) => setQuickType(event.target.value as BoardNodeType)}
               value={quickType}
@@ -421,12 +441,13 @@ export function BoardPage() {
             </select>
             <label htmlFor="quick-node-title">标题</label>
             <input
+              disabled={!selectedCaseId}
               id="quick-node-title"
               onChange={(event) => setQuickTitle(event.target.value)}
-              placeholder="例如：缺失的钥匙"
+              placeholder={selectedCaseId ? '例如：缺失的钥匙' : '请先创建或选择一个案件'}
               value={quickTitle}
             />
-            <button type="submit">添加到案件板</button>
+            <button disabled={!selectedCaseId} type="submit">添加到案件板</button>
           </form>
           <div className="capture-shortcuts" aria-label="节点类型指南">
             {NODE_TYPES.map((nodeType) => (
@@ -480,6 +501,7 @@ export function BoardPage() {
             handleNodePointerUp,
             selectRelation,
             selectNode,
+            handleCreateDefaultCase,
           )}
         </div>
 
@@ -573,6 +595,7 @@ function renderBoardContent(
   onPointerUp: (e: React.PointerEvent) => void,
   onSelectRelation: (relationId: string) => void,
   onSelectNode: (nodeId: string) => void,
+  onCreateCase: () => void,
 ) {
   if (isLoadingScope || boardStatus === 'loading') {
     return (
@@ -589,6 +612,9 @@ function renderBoardContent(
         <p className="board-kicker">案件板</p>
         <h2>先创建或选择一个案件</h2>
         <p>案件板会记录你在本局游戏中已经知道的人物、线索、事件和猜想。</p>
+        <button className="board-empty-cta" onClick={onCreateCase} type="button">
+          创建默认案件
+        </button>
       </div>
     );
   }
