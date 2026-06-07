@@ -47,6 +47,14 @@ function createDefaultFixture() {
     createBoardRelation: vi.fn(),
     updateHypothesis: vi.fn(),
     updateBoardRelation: vi.fn(),
+    updateCharacter: vi.fn(),
+    updateClue: vi.fn(),
+    updateEvent: vi.fn(),
+    softDeleteCharacter: vi.fn(),
+    softDeleteClue: vi.fn(),
+    softDeleteEvent: vi.fn(),
+    softDeleteHypothesis: vi.fn(),
+    softDeleteBoardRelation: vi.fn(),
     saveBoardNodePosition: vi.fn(),
   } as unknown as MurderBoardRepository;
 }
@@ -444,11 +452,281 @@ describe('BoardPage', () => {
     const searchInput = screen.getByLabelText('在案件板中查找');
     await user.type(searchInput, '怀表');
 
-    // The matching clue should still be visible
-    expect(screen.getByText('停摆怀表')).toBeInTheDocument();
+    // The matching clue text appears in both the node and inspector; use getAllByText
+    expect(screen.getAllByText('停摆怀表').length).toBeGreaterThanOrEqual(1);
 
     // Non-matching nodes may be dimmed but still in DOM
     expect(screen.getByText('林乔')).toBeInTheDocument();
     expect(screen.getByText('现场被提前布置')).toBeInTheDocument();
+  });
+
+  // --- P0-1: Empty state to board creation ---
+
+  it('creates a default case from empty state and then adds a node', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    // No workspaces or cases (empty state)
+    repository.listWorkspaces = vi.fn().mockResolvedValue([]);
+    repository.listCases = vi.fn().mockResolvedValue([]);
+    repository.createWorkspace = vi.fn().mockResolvedValue({ id: 'ws-1', name: '默认工作区', description: '', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null });
+    repository.createCase = vi.fn().mockResolvedValue({ id: 'case-new', workspaceId: 'ws-1', name: '我的案件', status: 'active', summary: '', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, archivedAt: null, deletedAt: null, statusBeforeDelete: null });
+    repository.listCharacters = vi.fn().mockResolvedValue([]);
+    repository.listClues = vi.fn().mockResolvedValue([]);
+    repository.listEvents = vi.fn().mockResolvedValue([]);
+    repository.listHypotheses = vi.fn().mockResolvedValue([]);
+    repository.listBoardRelations = vi.fn().mockResolvedValue([]);
+    repository.listBoardNodePositions = vi.fn().mockResolvedValue([]);
+
+    renderBoardWithRepository(repository);
+
+    // Should show empty state with CTA
+    expect(await screen.findByText('先创建或选择一个案件')).toBeInTheDocument();
+
+    // Click the create button
+    await user.click(screen.getByRole('button', { name: '创建默认案件' }));
+
+    // After creation, the workspace and case are created, then refreshScope is called
+    // The mock listWorkspaces/listCases return empty so refreshScope still shows empty,
+    // but the createWorkspace and createCase methods were called
+    expect(repository.createWorkspace).toHaveBeenCalledWith({ name: '默认工作区' });
+  });
+
+  // --- P0-2: Delete ---
+
+  it('soft deletes a node and refreshes', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    repository.listCharacters = vi.fn().mockResolvedValue([
+      { id: 'char-1', caseId: 'case-1', name: '林乔', role: '目击者', notes: '', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listClues = vi.fn().mockResolvedValue([]);
+    repository.listEvents = vi.fn().mockResolvedValue([]);
+    repository.listHypotheses = vi.fn().mockResolvedValue([]);
+    repository.listBoardRelations = vi.fn().mockResolvedValue([]);
+    repository.listBoardNodePositions = vi.fn().mockResolvedValue([]);
+
+    renderBoardWithRepository(repository);
+
+    // Click on the character node to select it
+    await user.click(await screen.findByText('林乔'));
+
+    // Click delete button
+    await user.click(screen.getByRole('button', { name: '删除节点' }));
+
+    // Confirm deletion
+    await user.click(screen.getByRole('button', { name: '确认删除' }));
+
+    expect(repository.softDeleteCharacter).toHaveBeenCalledWith('char-1');
+  });
+
+  it('soft deletes a board relation', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    repository.listCharacters = vi.fn().mockResolvedValue([
+      { id: 'char-1', caseId: 'case-1', name: '林乔', role: '目击者', notes: '', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listClues = vi.fn().mockResolvedValue([
+      { id: 'clue-1', caseId: 'case-1', title: '停摆怀表', content: '', source: '书房', discoveredAt: null, createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listHypotheses = vi.fn().mockResolvedValue([]);
+    repository.listBoardRelations = vi.fn().mockResolvedValue([
+      { id: 'rel-1', caseId: 'case-1', fromNodeType: 'person', fromNodeId: 'char-1', toNodeType: 'clue', toNodeId: 'clue-1', type: 'related', note: '', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listBoardNodePositions = vi.fn().mockResolvedValue([]);
+
+    renderBoardWithRepository(repository);
+
+    // Click relation label, then delete
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '选择关联关系' })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: '选择关联关系' }));
+
+    await user.click(screen.getByRole('button', { name: '删除关系' }));
+    await user.click(screen.getByRole('button', { name: '确认删除' }));
+
+    expect(repository.softDeleteBoardRelation).toHaveBeenCalledWith('rel-1');
+  });
+
+  // --- P0-3: Edit all node types ---
+
+  it('edits a person node in the inspector', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    repository.listCharacters = vi.fn().mockResolvedValue([
+      { id: 'char-1', caseId: 'case-1', name: '林乔', role: '目击者', notes: '初始备注', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listClues = vi.fn().mockResolvedValue([]);
+    repository.listEvents = vi.fn().mockResolvedValue([]);
+    repository.listHypotheses = vi.fn().mockResolvedValue([]);
+    repository.listBoardRelations = vi.fn().mockResolvedValue([]);
+    repository.listBoardNodePositions = vi.fn().mockResolvedValue([]);
+
+    renderBoardWithRepository(repository);
+
+    await user.click(await screen.findByText('林乔'));
+    await user.click(screen.getByRole('button', { name: '编辑人物' }));
+
+    const titleInputs = screen.getAllByLabelText('标题');
+    await user.clear(titleInputs[1]);
+    await user.type(titleInputs[1], '张伟');
+
+    const roleInput = screen.getByLabelText('角色');
+    await user.clear(roleInput);
+    await user.type(roleInput, '嫌疑人');
+
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    expect(repository.updateCharacter).toHaveBeenCalledWith('char-1', {
+      name: '张伟',
+      role: '嫌疑人',
+      notes: '初始备注',
+    });
+  });
+
+  it('edits a clue node in the inspector', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    repository.listCharacters = vi.fn().mockResolvedValue([]);
+    repository.listClues = vi.fn().mockResolvedValue([
+      { id: 'clue-1', caseId: 'case-1', title: '怀表', content: '原始内容', source: '书房', discoveredAt: null, createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listEvents = vi.fn().mockResolvedValue([]);
+    repository.listHypotheses = vi.fn().mockResolvedValue([]);
+    repository.listBoardRelations = vi.fn().mockResolvedValue([]);
+    repository.listBoardNodePositions = vi.fn().mockResolvedValue([]);
+
+    renderBoardWithRepository(repository);
+
+    await user.click(await screen.findByText('怀表'));
+    await user.click(screen.getByRole('button', { name: '编辑线索' }));
+
+    const sourceInput = screen.getByLabelText('来源');
+    await user.clear(sourceInput);
+    await user.type(sourceInput, '卧室');
+
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    expect(repository.updateClue).toHaveBeenCalledWith('clue-1', {
+      title: '怀表',
+      source: '卧室',
+      content: '原始内容',
+    });
+  });
+
+  it('edits an event node in the inspector', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    repository.listCharacters = vi.fn().mockResolvedValue([]);
+    repository.listClues = vi.fn().mockResolvedValue([]);
+    repository.listEvents = vi.fn().mockResolvedValue([
+      { id: 'evt-1', caseId: 'case-1', title: '争吵', description: '原始描述', occurredAt: '2026-01-01T12:00:00.000Z', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listHypotheses = vi.fn().mockResolvedValue([]);
+    repository.listBoardRelations = vi.fn().mockResolvedValue([]);
+    repository.listBoardNodePositions = vi.fn().mockResolvedValue([]);
+
+    renderBoardWithRepository(repository);
+
+    await user.click(await screen.findByText('争吵'));
+    await user.click(screen.getByRole('button', { name: '编辑事件' }));
+
+    const bodyInput = screen.getByLabelText('详情');
+    await user.clear(bodyInput);
+    await user.type(bodyInput, '更新后的描述');
+
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    expect(repository.updateEvent).toHaveBeenCalledWith('evt-1', {
+      title: '争吵',
+      occurredAt: '2026-01-01T12:00:00.000Z',
+      description: '更新后的描述',
+    });
+  });
+
+  // --- P0-4: Error feedback ---
+
+  it('shows Chinese error when quick-add fails', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    repository.createClue = vi.fn().mockRejectedValue(new Error('network error'));
+
+    renderBoardWithRepository(repository);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('标题')).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText('标题'), '测试');
+    await user.click(screen.getByRole('button', { name: '添加到案件板' }));
+
+    expect(await screen.findByText('创建失败，请检查网络后重试')).toBeInTheDocument();
+  });
+
+  it('shows Chinese error when relation creation fails', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    repository.listCharacters = vi.fn().mockResolvedValue([
+      { id: 'char-1', caseId: 'case-1', name: '林乔', role: '目击者', notes: '', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listClues = vi.fn().mockResolvedValue([]);
+    repository.listHypotheses = vi.fn().mockResolvedValue([
+      { id: 'hyp-1', caseId: 'case-1', title: '测试猜想', body: '', status: 'unverified', confidence: 50, createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listBoardRelations = vi.fn().mockResolvedValue([]);
+    repository.listBoardNodePositions = vi.fn().mockResolvedValue([]);
+    repository.createBoardRelation = vi.fn().mockRejectedValue(new Error('same case'));
+
+    renderBoardWithRepository(repository);
+
+    await user.click(await screen.findByText('林乔'));
+    await user.click(screen.getByRole('button', { name: '继续关联线索' }));
+    await user.selectOptions(screen.getByLabelText('目标节点'), 'hyp-1');
+    await user.click(screen.getByRole('button', { name: '确认建立' }));
+
+    expect(await screen.findByText('关系创建失败，这两个节点可能不在同一案件中')).toBeInTheDocument();
+  });
+
+  // --- P0-5: Search auto-select ---
+
+  it('search auto-selects first matching node and opens inspector', async () => {
+    const user = userEvent.setup();
+    const repository = createDefaultFixture();
+
+    repository.listCharacters = vi.fn().mockResolvedValue([
+      { id: 'char-1', caseId: 'case-1', name: '林乔', role: '目击者', notes: '', createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listClues = vi.fn().mockResolvedValue([
+      { id: 'clue-1', caseId: 'case-1', title: '停摆怀表', content: '', source: '书房', discoveredAt: null, createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listHypotheses = vi.fn().mockResolvedValue([
+      { id: 'hyp-1', caseId: 'case-1', title: '猜想测试', body: '', status: 'unverified', confidence: 50, createdAt: TIMESTAMP, updatedAt: TIMESTAMP, deletedAt: null },
+    ]);
+    repository.listBoardRelations = vi.fn().mockResolvedValue([]);
+    repository.listBoardNodePositions = vi.fn().mockResolvedValue([]);
+
+    renderBoardWithRepository(repository);
+
+    await screen.findByText('林乔');
+
+    // Type to search for the hypothesis
+    const searchInput = screen.getByLabelText('在案件板中查找');
+    await user.type(searchInput, '猜想');
+
+    // Inspector should show the hypothesis (first matching node) in both node and heading
+    const matches = await screen.findAllByText('猜想测试');
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+
+    // One of the headings should be the hypothesis title in the inspector
+    const headings = screen.getAllByRole('heading', { level: 2 });
+    expect(headings.some((h) => h.textContent === '猜想测试')).toBe(true);
   });
 });

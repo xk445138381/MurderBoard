@@ -1389,3 +1389,51 @@ a {
   transform: scale(1.04);
   transition: none;
 }
+
+.board-notification {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.board-notification--error {
+  background: #5c1f1f;
+  color: #f3b3b3;
+  border-bottom: 1px solid #7a2a2a;
+}
+
+.board-notification-close {
+  margin-left: auto;
+  padding: 0.2rem 0.5rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #f3b3b3;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.board-search-count {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #9ba8b1;
+}
+
+.inspector-delete-btn {
+  padding: 0.55rem 1rem;
+  border: 1px solid #7a2a2a;
+  border-radius: 7px;
+  background: transparent;
+  color: #e87a7a;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.inspector-empty-hint {
+  color: #6d7a83;
+  font-size: 0.82rem;
+}
