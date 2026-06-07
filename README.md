@@ -8,6 +8,8 @@
 - [产品需求说明](docs/product-requirements.md)
 - [API 设计](docs/api-design.md)
 - [实现路线图](docs/implementation-roadmap.md)
+- [UI 设计方向](docs/ui-design-direction.md)
+- [设计审查 Gate](docs/design-review-gate.md)
 
 ## Development
 

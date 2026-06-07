@@ -209,3 +209,233 @@ export function isHypothesisStatus(value: string): value is HypothesisStatus {
 export function isIsoDateString(value: string): value is IsoDateString {
   return ISO_DATE_TIME_PATTERN.test(value) && Number.isFinite(Date.parse(value));
 }
+
+// ===== Configurable Content Type System (ADR-0001) =====
+
+// --- Field Type Pool ---
+
+export const FIELD_TYPES = [
+  "single-line-text",
+  "multi-line-text",
+  "datetime",
+  "date-range",
+  "number",
+  "enum",
+  "boolean",
+  "reference",
+  "unlock-block",
+] as const;
+
+export type FieldType = (typeof FIELD_TYPES)[number];
+
+export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
+  "single-line-text": "单行文本",
+  "multi-line-text": "多行文本",
+  datetime: "日期时间",
+  "date-range": "日期范围",
+  number: "数字",
+  enum: "枚举",
+  boolean: "布尔",
+  reference: "引用",
+  "unlock-block": "解锁块",
+};
+
+// --- Field Definition ---
+
+export interface FieldDefinition {
+  name: string;
+  type: FieldType;
+  required: boolean;
+  enumOptions?: string[];
+}
+
+// --- Board Node Visual ---
+
+export const NODE_SHAPES = ["circle", "square", "diamond", "hexagon"] as const;
+export type NodeShape = (typeof NODE_SHAPES)[number];
+
+export interface BoardNodeVisual {
+  color: string;
+  shape: NodeShape;
+}
+
+// --- Content Type Template (global, immutable) ---
+
+export interface ContentTypeTemplate {
+  id: string;
+  name: string;
+  fields: FieldDefinition[];
+  visual: BoardNodeVisual;
+  unlockEnabled: boolean;
+  createdAt: IsoDateString;
+}
+
+// --- Content Type (per-game, mutable copy) ---
+
+export interface ContentType {
+  id: string;
+  gameId: string;
+  templateId: string;
+  name: string;
+  fields: FieldDefinition[];
+  visual: BoardNodeVisual;
+  unlockEnabled: boolean;
+}
+
+// --- Acquisition Status ---
+
+export const ACQUISITION_STATUSES = ["locked", "unlocked", "acquired"] as const;
+export type AcquisitionStatus = (typeof ACQUISITION_STATUSES)[number];
+
+// --- Unlock Block ---
+
+export interface UnlockBlock {
+  id: string;
+  targetName: string;
+  requiredPerson: string | null;
+  requiredLocation: string | null;
+  status: AcquisitionStatus;
+}
+
+// --- Content Item ---
+
+export interface ContentItem {
+  id: string;
+  gameId: string;
+  contentTypeId: string;
+  title: string;
+  fieldValues: Record<string, unknown>;
+  unlockBlocks: UnlockBlock[];
+  acquisitionStatus: AcquisitionStatus;
+  createdAt: IsoDateString;
+  updatedAt: IsoDateString;
+}
+
+// --- Game ---
+
+export interface Game {
+  id: string;
+  name: string;
+  contentTypes: ContentType[];
+  createdAt: IsoDateString;
+  updatedAt: IsoDateString;
+}
+
+// --- Board ---
+
+export const BOARD_KINDS = ["sub", "master"] as const;
+export type BoardKind = (typeof BOARD_KINDS)[number];
+
+export interface Board {
+  id: string;
+  gameId: string;
+  name: string;
+  kind: BoardKind;
+  indictmentId: string | null;
+}
+
+// --- Node Position ---
+
+export interface NodePosition {
+  contentItemId: string;
+  boardId: string;
+  x: number;
+  y: number;
+}
+
+// --- Content Relation (inference, player-drawn) ---
+
+export interface ContentRelation {
+  id: string;
+  fromContentItemId: string;
+  toContentItemId: string;
+  type: BoardRelationType;
+  note: string;
+  createdAt: IsoDateString;
+  updatedAt: IsoDateString;
+}
+
+// --- Unlock Relation (computed, not persisted) ---
+
+export interface UnlockRelation {
+  fromContentItemId: string;
+  toContentItemId: string;
+  unlockBlockId: string;
+}
+
+// --- Type Guards ---
+
+export function isFieldType(value: string): value is FieldType {
+  return FIELD_TYPES.includes(value as FieldType);
+}
+
+export function isAcquisitionStatus(value: string): value is AcquisitionStatus {
+  return ACQUISITION_STATUSES.includes(value as AcquisitionStatus);
+}
+
+export function isBoardKind(value: string): value is BoardKind {
+  return BOARD_KINDS.includes(value as BoardKind);
+}
+
+export function isNodeShape(value: string): value is NodeShape {
+  return NODE_SHAPES.includes(value as NodeShape);
+}
+
+// --- Domain Utilities ---
+
+/**
+ * Compare two field definition arrays for template merging.
+ * Only compares field name + type (ignores required, enumOptions, order).
+ */
+export function fieldsMatch(a: FieldDefinition[], b: FieldDefinition[]): boolean {
+  if (a.length !== b.length) return false;
+  const key = (f: FieldDefinition) => `${f.name}:${f.type}`;
+  const aSet = new Set(a.map(key));
+  return b.every((f) => aSet.has(key(f)));
+}
+
+/**
+ * Deep-copy a template into a game-specific ContentType.
+ */
+export function instantiateContentType(
+  template: ContentTypeTemplate,
+  gameId: string,
+  idGenerator: () => string,
+): ContentType {
+  return {
+    id: idGenerator(),
+    gameId,
+    templateId: template.id,
+    name: template.name,
+    fields: template.fields.map((f) => ({ ...f, enumOptions: f.enumOptions ? [...f.enumOptions] : undefined })),
+    visual: { ...template.visual },
+    unlockEnabled: template.unlockEnabled,
+  };
+}
+
+/**
+ * Compute unlock relations from a set of content items.
+ * An unlock relation exists when item A has an unlock block whose
+ * targetName matches item B"s title, and the block is not locked.
+ */
+export function computeUnlockRelations(items: ContentItem[]): UnlockRelation[] {
+  const result: UnlockRelation[] = [];
+  const titleIndex = new Map<string, ContentItem>();
+  for (const item of items) {
+    if (item.title) titleIndex.set(item.title, item);
+  }
+  for (const item of items) {
+    for (const block of item.unlockBlocks) {
+      if (block.status === "locked") continue;
+      const target = titleIndex.get(block.targetName);
+      if (target) {
+        result.push({
+          fromContentItemId: item.id,
+          toContentItemId: target.id,
+          unlockBlockId: block.id,
+        });
+      }
+    }
+  }
+  return result;
+}

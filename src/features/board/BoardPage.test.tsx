@@ -73,6 +73,8 @@ describe('BoardPage', () => {
 
     expect(screen.getByRole('heading', { name: 'MurderBoard' })).toBeInTheDocument();
     expect(screen.getByLabelText('可视化案件板')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '第一幕案件板' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '渡鸦宅邸案件板' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '记录已知信息' })).toBeInTheDocument();
     expect(screen.getByLabelText('检查器')).toBeInTheDocument();
   });

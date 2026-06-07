@@ -1,0 +1,71 @@
+<h2>阶段 1 架构设计：本地优先 React 应用骨架</h2>
+<p class="subtitle">目标是先建立可运行、可测试、可逐步扩展的前端工程，而不是一次性实现完整产品。</p>
+
+<div class="mockup">
+  <div class="mockup-header">Proposed Architecture</div>
+  <div class="mockup-body">
+    <div style="display:grid;gap:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="placeholder">
+          <strong>App Shell</strong><br>
+          Vite + React + TypeScript<br>
+          Router, layout, navigation
+        </div>
+        <div class="placeholder">
+          <strong>Feature Pages</strong><br>
+          Cases, entities, timeline<br>
+          Placeholder screens first
+        </div>
+        <div class="placeholder">
+          <strong>Shared UI</strong><br>
+          Basic components<br>
+          Empty/loading/error states
+        </div>
+      </div>
+
+      <div style="text-align:center;font-weight:600;color:#64748b">↓ user actions and route state</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="placeholder">
+          <strong>Domain Layer</strong><br>
+          Type definitions for case board data<br>
+          Pure helpers where needed
+        </div>
+        <div class="placeholder">
+          <strong>Repository Layer</strong><br>
+          Storage interfaces used by features<br>
+          Keeps UI independent from IndexedDB
+        </div>
+      </div>
+
+      <div style="text-align:center;font-weight:600;color:#64748b">↓ async persistence boundary</div>
+
+      <div class="placeholder">
+        <strong>IndexedDB Adapter</strong><br>
+        Local-first persistence for future case boards, characters, locations, events, evidence, notes, and archive/trash metadata.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>设计边界</h3>
+  <p>阶段 1 只承诺工程骨架、路由、基础页面、数据访问抽象、IndexedDB 初始化和测试工具链。具体业务功能先以占位页和类型边界表达，避免过早实现未确认的交互。</p>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-architecture" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>架构方向正确</h3>
+      <p>继续确认组件、数据流、错误处理和测试设计。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="revise-architecture" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>需要调整</h3>
+      <p>比如改技术边界、减少数据层、或增加更完整的 UI 结构。</p>
+    </div>
+  </div>
+</div>

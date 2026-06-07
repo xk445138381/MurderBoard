@@ -2,6 +2,8 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const navItems = [
   { to: '/board', label: '案件板' },
+  { to: '/templates', label: '模板库' },
+  { to: '/games/new', label: '新建游戏' },
 ];
 
 export function AppLayout() {

@@ -31,7 +31,7 @@ const HYPOTHESIS_STATUS_OPTIONS: { value: HypothesisStatus; label: string }[] = 
 
 export function BoardPage() {
   const repository = useMurderBoardRepository();
-  const { isLoadingScope, refreshScope, selectedCaseId } = useWorkspaceCaseSelection();
+  const { isLoadingScope, refreshScope, selectedCase, selectedCaseId } = useWorkspaceCaseSelection();
   const {
     error: boardError,
     nodes,
@@ -494,7 +494,7 @@ export function BoardPage() {
         </aside>
 
         <div className="case-board" aria-label="可视化案件板">
-          {renderBoardContent(isLoadingScope, boardStatus, selectedCaseId, boardError, nodes, nodeById, visibleRelations, selectedNodeId, matchingNodeIds, selectedRelationId, dragState, handleNodePointerDown, handleNodePointerMove, handleNodePointerUp, selectRelation, selectNode, handleCreateDefaultCase)}
+          {renderBoardContent(isLoadingScope, boardStatus, selectedCaseId, selectedCase?.name ?? null, boardError, nodes, nodeById, visibleRelations, selectedNodeId, matchingNodeIds, selectedRelationId, dragState, handleNodePointerDown, handleNodePointerMove, handleNodePointerUp, selectRelation, selectNode, handleCreateDefaultCase)}
         </div>
 
         <aside className="board-inspector" aria-label="检查器">
@@ -530,7 +530,7 @@ export function BoardPage() {
 // --- Board Canvas ---
 
 function renderBoardContent(
-  isLoadingScope: boolean, boardStatus: string, selectedCaseId: string | null, boardError: string | null,
+  isLoadingScope: boolean, boardStatus: string, selectedCaseId: string | null, selectedCaseName: string | null, boardError: string | null,
   nodes: BoardViewNode[], nodeById: Map<string, BoardViewNode>, visibleRelations: BoardViewRelation[],
   selectedNodeId: string | null, matchingNodeIds: Set<string>, selectedRelationId: string | null,
   dragState: any, onPointerDown: any, onPointerMove: any, onPointerUp: any,
@@ -557,7 +557,7 @@ function renderBoardContent(
   return (
     <>
       <div className="board-canvas-heading">
-        <div><h2>渡鸦宅邸案件板</h2><p>整理玩家已知、怀疑和可以推翻的证据关系。</p></div>
+        <div><h2>{selectedCaseName ? `${selectedCaseName}案件板` : '案件板'}</h2><p>整理玩家已知、怀疑和可以推翻的证据关系。</p></div>
         <div className="board-stats" aria-label="案件板统计">
           <span>{nodes.length} 个节点</span><span>{visibleRelations.length} 条关系</span>
         </div>
