@@ -11,13 +11,14 @@ function renderRoute(path: string) {
 describe('routes', () => {
   it.each([
     ['/', 'MurderBoard'],
-    ['/cases', 'Cases'],
-    ['/entities', 'Entities'],
-    ['/timeline', 'Timeline'],
-    ['/evidence', 'Evidence'],
-    ['/notes', 'Notes'],
-    ['/trash', 'Trash'],
-    ['/archive', 'Archive'],
+    ['/board', 'MurderBoard'],
+    ['/cases', '案件管理'],
+    ['/entities', '人物管理'],
+    ['/timeline', '时间线管理'],
+    ['/evidence', '线索管理'],
+    ['/notes', '笔记'],
+    ['/trash', '回收站'],
+    ['/archive', '归档管理'],
   ])('renders %s', async (path, heading) => {
     renderRoute(path);
 

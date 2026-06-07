@@ -115,10 +115,9 @@ export function TimelinePage() {
     <section aria-labelledby="timeline-title" className="stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Phase 4</p>
-          <h1 id="timeline-title">Timeline</h1>
+          <h1 id="timeline-title">时间线管理</h1>
         </div>
-        <p>Record story events, sort by occurrence time, and connect events to people and clues.</p>
+        <p>记录故事情节，按发生时间排序，串联人物与线索。</p>
       </div>
 
       <CaseScopeSelector
@@ -134,8 +133,8 @@ export function TimelinePage() {
         workspaces={workspaces}
       />
 
-      {errorMessage ? <ErrorState title="Action failed" message={errorMessage} /> : null}
-      {isLoadingTimeline ? <LoadingState message="Loading timeline..." /> : null}
+      {errorMessage ? <ErrorState title="操作失败" message={errorMessage} /> : null}
+      {isLoadingTimeline ? <LoadingState message="加载中..." /> : null}
 
       {selectedCase ? (
         <>
@@ -150,9 +149,9 @@ export function TimelinePage() {
             }
           />
           <ListSearch
-            label="Search timeline events"
+            label="搜索时间线"
             onSearchChange={setEventQuery}
-            placeholder="Filter by title, description, time, or linked records"
+            placeholder="按标题、描述、时间或关联记录筛选"
             searchValue={eventQuery}
           />
           <EventList
@@ -162,14 +161,14 @@ export function TimelinePage() {
             events={filteredEvents}
             emptyMessage={
               events.length === 0
-                ? 'Add events to build the case timeline.'
-                : 'No timeline events match the current search.'
+                ? '添加事件来构建案件时间线。'
+                : '没有找到匹配的时间线事件。'
             }
-            emptyTitle={events.length === 0 ? 'No events yet' : 'No events found'}
+            emptyTitle={events.length === 0 ? '暂无事件' : '未找到事件'}
             onDelete={(eventId) =>
               runAction(async () => {
                 const event = events.find((candidate) => candidate.id === eventId);
-                if (event && !confirmDestructiveAction(`Move event "${event.title}" to trash?`)) {
+                if (event && !confirmDestructiveAction(`将事件"${event.title}"移入回收站？`)) {
                   return;
                 }
                 await repository.softDeleteEvent(eventId);
@@ -226,8 +225,8 @@ function CreateEventForm({ caseName, characters, clues, onCreate }: CreateEventF
   }
 
   return (
-    <form aria-label="Create event" className="panel form-grid" onSubmit={handleSubmit}>
-      <h2>Add event to {caseName}</h2>
+    <form aria-label="创建事件" className="panel form-grid" onSubmit={handleSubmit}>
+      <h2>添加到 {caseName}</h2>
       <EventFields
         characters={characters}
         clues={clues}
@@ -243,7 +242,7 @@ function CreateEventForm({ caseName, characters, clues, onCreate }: CreateEventF
         relatedClueIds={relatedClueIds}
         title={title}
       />
-      <button type="submit">Create event</button>
+      <button type="submit">创建事件</button>
     </form>
   );
 }
@@ -274,8 +273,8 @@ function EventList({
   }
 
   return (
-    <div aria-label="Timeline event list" className="stack">
-      <h2>Timeline events</h2>
+    <div aria-label="时间线事件列表" className="stack">
+      <h2>时间线事件</h2>
       {events.map((event) => (
         <EventEditor
           characters={characters}
@@ -362,10 +361,10 @@ function EventEditor({
 
   return (
     <article className="panel">
-      <form aria-label={`Edit event ${event.title}`} className="form-grid" onSubmit={handleSubmit}>
+      <form aria-label={`编辑事件 ${event.title}`} className="form-grid" onSubmit={handleSubmit}>
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Event</p>
+            <p className="eyebrow">事件</p>
             <h3>{event.title}</h3>
           </div>
           <span className="badge">{event.occurredAt}</span>
@@ -387,9 +386,9 @@ function EventEditor({
           title={title}
         />
         <div className="button-row">
-          <button type="submit">Save event</button>
+          <button type="submit">保存事件</button>
           <button onClick={() => onDelete(event.id)} type="button">
-            Delete event
+            删除事件
           </button>
         </div>
       </form>
@@ -431,7 +430,7 @@ function EventFields({
   return (
     <>
       <div>
-        <label htmlFor={`${fieldId}-title`}>Title</label>
+        <label htmlFor={`${fieldId}-title`}>标题</label>
         <input
           id={`${fieldId}-title`}
           onChange={(event) => onTitleChange(event.target.value)}
@@ -439,7 +438,7 @@ function EventFields({
         />
       </div>
       <div>
-        <label htmlFor={`${fieldId}-occurred-at`}>Occurred at</label>
+        <label htmlFor={`${fieldId}-occurred-at`}>发生时间</label>
         <input
           id={`${fieldId}-occurred-at`}
           onChange={(event) => onOccurredAtChange(event.target.value)}
@@ -448,7 +447,7 @@ function EventFields({
         />
       </div>
       <div>
-        <label htmlFor={`${fieldId}-description`}>Description</label>
+        <label htmlFor={`${fieldId}-description`}>描述</label>
         <textarea
           id={`${fieldId}-description`}
           onChange={(event) => onDescriptionChange(event.target.value)}
@@ -457,13 +456,13 @@ function EventFields({
         />
       </div>
       <RelationCheckboxes
-        label="Related characters"
+        label="关联人物"
         onSelectionChange={onRelatedCharacterIdsChange}
         options={characters.map((character) => ({ id: character.id, label: character.name }))}
         selectedIds={relatedCharacterIds}
       />
       <RelationCheckboxes
-        label="Related clues"
+        label="关联线索"
         onSelectionChange={onRelatedClueIdsChange}
         options={clues.map((clue) => ({ id: clue.id, label: clue.title }))}
         selectedIds={relatedClueIds}
@@ -489,7 +488,7 @@ function RelationCheckboxes({
     return (
       <fieldset className="relation-fieldset">
         <legend>{label}</legend>
-        <p>No records available.</p>
+        <p>暂无可选记录。</p>
       </fieldset>
     );
   }
@@ -529,11 +528,11 @@ function describeRelations(characters: Character[], clues: Clue[], relations: Ev
     .filter((clue) => relations.clueIds.includes(clue.id))
     .map((clue) => clue.title);
   const parts = [
-    characterNames.length ? `Characters: ${characterNames.join(', ')}` : null,
-    clueTitles.length ? `Clues: ${clueTitles.join(', ')}` : null,
+    characterNames.length ? `人物：${characterNames.join(', ')}` : null,
+    clueTitles.length ? `线索：${clueTitles.join(', ')}` : null,
   ].filter(Boolean);
 
-  return parts.join(' · ') || 'No related characters or clues.';
+  return parts.join(' · ') || '暂无关联人物或线索。';
 }
 
 function normalizeSearchTerm(value: string) {

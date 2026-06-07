@@ -40,25 +40,25 @@ describe('CasesPage', () => {
     const { client, repository } = createRepository();
     renderCasesPage(repository);
 
-    expect(await screen.findByRole('heading', { name: 'Cases' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '案件管理' })).toBeInTheDocument();
 
-    const createWorkspaceForm = screen.getByRole('form', { name: 'Create workspace' });
-    await user.type(within(createWorkspaceForm).getByLabelText('Workspace name'), 'Baker Street');
+    const createWorkspaceForm = screen.getByRole('form', { name: '创建工作区' });
+    await user.type(within(createWorkspaceForm).getByLabelText('工作区名称'), 'Baker Street');
     await user.type(
-      within(createWorkspaceForm).getByLabelText('Description'),
+      within(createWorkspaceForm).getByLabelText('描述'),
       'Holmes campaign',
     );
-    await user.click(within(createWorkspaceForm).getByRole('button', { name: 'Create workspace' }));
+    await user.click(within(createWorkspaceForm).getByRole('button', { name: '创建工作区' }));
 
     expect(await screen.findByRole('heading', { name: 'Baker Street' })).toBeInTheDocument();
 
-    const createCaseForm = screen.getByRole('form', { name: 'Create case' });
-    await user.type(within(createCaseForm).getByLabelText('Case name'), 'First Night');
-    await user.type(within(createCaseForm).getByLabelText('Summary'), 'A locked room opening.');
-    await user.selectOptions(within(createCaseForm).getByLabelText('Status'), 'active');
-    await user.click(within(createCaseForm).getByRole('button', { name: 'Create case' }));
+    const createCaseForm = screen.getByRole('form', { name: '创建案件' });
+    await user.type(within(createCaseForm).getByLabelText('案件名称'), 'First Night');
+    await user.type(within(createCaseForm).getByLabelText('摘要'), 'A locked room opening.');
+    await user.selectOptions(within(createCaseForm).getByLabelText('状态'), 'active');
+    await user.click(within(createCaseForm).getByRole('button', { name: '创建案件' }));
 
-    const caseForm = await screen.findByRole('form', { name: 'Edit case First Night' });
+    const caseForm = await screen.findByRole('form', { name: '编辑案件 First Night' });
     expect(within(caseForm).getByText('active', { selector: '.badge' })).toBeInTheDocument();
 
     await closeClient(client);
@@ -69,18 +69,18 @@ describe('CasesPage', () => {
     const { client, repository } = createRepository();
     renderCasesPage(repository);
 
-    const createWorkspaceForm = await screen.findByRole('form', { name: 'Create workspace' });
-    await user.type(within(createWorkspaceForm).getByLabelText('Workspace name'), 'Duplicate');
-    await user.click(within(createWorkspaceForm).getByRole('button', { name: 'Create workspace' }));
+    const createWorkspaceForm = await screen.findByRole('form', { name: '创建工作区' });
+    await user.type(within(createWorkspaceForm).getByLabelText('工作区名称'), 'Duplicate');
+    await user.click(within(createWorkspaceForm).getByRole('button', { name: '创建工作区' }));
     await screen.findByRole('heading', { name: 'Duplicate' });
 
-    await user.type(within(createWorkspaceForm).getByLabelText('Workspace name'), 'Duplicate');
-    await user.click(within(createWorkspaceForm).getByRole('button', { name: 'Create workspace' }));
+    await user.type(within(createWorkspaceForm).getByLabelText('工作区名称'), 'Duplicate');
+    await user.click(within(createWorkspaceForm).getByRole('button', { name: '创建工作区' }));
 
     expect(
       await screen.findByText('Workspace name "Duplicate" already exists.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Cases' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '案件管理' })).toBeInTheDocument();
 
     await closeClient(client);
   });
@@ -92,21 +92,21 @@ describe('CasesPage', () => {
     await repository.createCase(workspace.id, { name: 'First Night' });
     renderCasesPage(repository);
 
-    const caseForm = await screen.findByRole('form', { name: 'Edit case First Night' });
-    await user.clear(within(caseForm).getByLabelText('Case name'));
-    await user.type(within(caseForm).getByLabelText('Case name'), 'Second Night');
-    await user.selectOptions(within(caseForm).getByLabelText('Status'), 'active');
-    await user.click(within(caseForm).getByRole('button', { name: 'Save case' }));
+    const caseForm = await screen.findByRole('form', { name: '编辑案件 First Night' });
+    await user.clear(within(caseForm).getByLabelText('案件名称'));
+    await user.type(within(caseForm).getByLabelText('案件名称'), 'Second Night');
+    await user.selectOptions(within(caseForm).getByLabelText('状态'), 'active');
+    await user.click(within(caseForm).getByRole('button', { name: '保存案件' }));
 
-    const renamedCaseForm = await screen.findByRole('form', { name: 'Edit case Second Night' });
+    const renamedCaseForm = await screen.findByRole('form', { name: '编辑案件 Second Night' });
     expect(within(renamedCaseForm).getByDisplayValue('Second Night')).toBeInTheDocument();
     expect(within(renamedCaseForm).getByText('active', { selector: '.badge' })).toBeInTheDocument();
 
-    await user.click(within(renamedCaseForm).getByRole('button', { name: 'Archive case' }));
+    await user.click(within(renamedCaseForm).getByRole('button', { name: '归档案件' }));
 
-    const archivedCaseForm = await screen.findByRole('form', { name: 'Edit case Second Night' });
+    const archivedCaseForm = await screen.findByRole('form', { name: '编辑案件 Second Night' });
     expect(within(archivedCaseForm).getByText('archived', { selector: '.badge' })).toBeInTheDocument();
-    expect(within(archivedCaseForm).getByRole('button', { name: 'Archive case' })).toBeDisabled();
+    expect(within(archivedCaseForm).getByRole('button', { name: '归档案件' })).toBeDisabled();
 
     await closeClient(client);
   });
@@ -126,19 +126,19 @@ describe('CasesPage', () => {
     });
     renderCasesPage(repository);
 
-    expect(await screen.findByRole('form', { name: 'Edit case Alpha case' })).toBeInTheDocument();
-    expect(screen.getByRole('form', { name: 'Edit case Beta case' })).toBeInTheDocument();
+    expect(await screen.findByRole('form', { name: '编辑案件 Alpha case' })).toBeInTheDocument();
+    expect(screen.getByRole('form', { name: '编辑案件 Beta case' })).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Search cases'), { target: { value: 'library' } });
+    fireEvent.change(screen.getByLabelText('搜索案件'), { target: { value: 'library' } });
 
-    expect(screen.getByRole('form', { name: 'Edit case Alpha case' })).toBeInTheDocument();
-    expect(screen.queryByRole('form', { name: 'Edit case Beta case' })).not.toBeInTheDocument();
+    expect(screen.getByRole('form', { name: '编辑案件 Alpha case' })).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: '编辑案件 Beta case' })).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Search cases'), { target: { value: '' } });
-    fireEvent.change(screen.getByLabelText('Status filter'), { target: { value: 'draft' } });
+    fireEvent.change(screen.getByLabelText('搜索案件'), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('状态筛选'), { target: { value: 'draft' } });
 
-    expect(await screen.findByRole('form', { name: 'Edit case Beta case' })).toBeInTheDocument();
-    expect(screen.queryByRole('form', { name: 'Edit case Alpha case' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('form', { name: '编辑案件 Beta case' })).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: '编辑案件 Alpha case' })).not.toBeInTheDocument();
 
     await closeClient(client);
   });
@@ -151,18 +151,16 @@ describe('CasesPage', () => {
     await repository.createCase(sourceWorkspace.id, { name: 'First Night', status: 'active' });
     renderCasesPage(repository);
 
-    await screen.findByRole('form', { name: 'Edit case First Night' });
-    const copyMovePanel = screen.getByRole('region', { name: 'Copy or move case First Night' });
-    fireEvent.change(within(copyMovePanel).getByLabelText('Copy name'), {
+    await screen.findByRole('form', { name: '编辑案件 First Night' });
+    const copyMovePanel = screen.getByRole('region', { name: '复制或移动案件 First Night' });
+    fireEvent.change(within(copyMovePanel).getByLabelText('复制名称'), {
       target: { value: 'Copied Night' },
     });
-    await user.selectOptions(
-      within(copyMovePanel).getByLabelText('Copy target workspace'),
-      targetWorkspace.id,
-    );
-    await user.click(within(copyMovePanel).getByRole('button', { name: 'Copy case' }));
+    const targetLabels = within(copyMovePanel).getAllByLabelText('目标工作区');
+    await user.selectOptions(targetLabels[0], targetWorkspace.id);
+    await user.click(within(copyMovePanel).getByRole('button', { name: '复制案件' }));
 
-    expect(await screen.findByRole('form', { name: 'Edit case Copied Night' })).toBeInTheDocument();
+    expect(await screen.findByRole('form', { name: '编辑案件 Copied Night' })).toBeInTheDocument();
     expect(await repository.listCases(sourceWorkspace.id)).toHaveLength(1);
     expect(await repository.listCases(targetWorkspace.id)).toHaveLength(1);
 
@@ -177,14 +175,14 @@ describe('CasesPage', () => {
     renderCasesPage(repository);
 
     await screen.findByRole('heading', { name: 'Campaign' });
-    const importSection = screen.getByRole('region', { name: 'Import case JSON' });
-    await user.click(within(importSection).getByRole('button', { name: 'Preview import' }));
+    const importSection = screen.getByRole('region', { name: '导入案件 JSON' });
+    await user.click(within(importSection).getByRole('button', { name: '导入预览' }));
 
     expect(
       await screen.findByText('Case name "Imported Case" already exists in the selected workspace.'),
     ).toBeInTheDocument();
 
-    fireEvent.change(within(importSection).getByLabelText('Case JSON'), {
+    fireEvent.change(within(importSection).getByLabelText('案件 JSON'), {
       target: {
         value: JSON.stringify({
           name: 'Fresh Import',
@@ -202,11 +200,11 @@ describe('CasesPage', () => {
         }),
       },
     });
-    await user.click(within(importSection).getByRole('button', { name: 'Preview import' }));
-    expect(await screen.findByText('Ready to import')).toBeInTheDocument();
-    await user.click(within(importSection).getByRole('button', { name: 'Import case' }));
+    await user.click(within(importSection).getByRole('button', { name: '导入预览' }));
+    expect(await screen.findByText('准备导入')).toBeInTheDocument();
+    await user.click(within(importSection).getByRole('button', { name: '导入案件' }));
 
-    expect(await screen.findByRole('form', { name: 'Edit case Fresh Import' })).toBeInTheDocument();
+    expect(await screen.findByRole('form', { name: '编辑案件 Fresh Import' })).toBeInTheDocument();
 
     await closeClient(client);
   });

@@ -49,15 +49,15 @@ describe('ArchivePage', () => {
     renderArchivePage(repository);
 
     const restoreForm = await screen.findByRole('form', {
-      name: 'Restore archived case First Night',
+      name: '恢复已归档案件 First Night',
     });
     await user.selectOptions(
-      within(restoreForm).getByLabelText('Target workspace'),
+      within(restoreForm).getByLabelText('目标工作区'),
       targetWorkspace.id,
     );
-    await user.clear(within(restoreForm).getByLabelText('Restored case name'));
-    await user.type(within(restoreForm).getByLabelText('Restored case name'), 'First Night Replay');
-    await user.click(within(restoreForm).getByRole('button', { name: 'Restore as new case' }));
+    await user.clear(within(restoreForm).getByLabelText('恢复后案件名称'));
+    await user.type(within(restoreForm).getByLabelText('恢复后案件名称'), 'First Night Replay');
+    await user.click(within(restoreForm).getByRole('button', { name: '恢复为新案件' }));
 
     const targetCases = await repository.listCases(targetWorkspace.id);
     expect(targetCases).toEqual([
@@ -89,11 +89,11 @@ describe('ArchivePage', () => {
     renderArchivePage(repository);
 
     const restoreForm = await screen.findByRole('form', {
-      name: 'Restore archived case First Night',
+      name: '恢复已归档案件 First Night',
     });
-    await user.clear(within(restoreForm).getByLabelText('Restored case name'));
-    await user.type(within(restoreForm).getByLabelText('Restored case name'), 'Existing Case');
-    await user.click(within(restoreForm).getByRole('button', { name: 'Restore as new case' }));
+    await user.clear(within(restoreForm).getByLabelText('恢复后案件名称'));
+    await user.type(within(restoreForm).getByLabelText('恢复后案件名称'), 'Existing Case');
+    await user.click(within(restoreForm).getByRole('button', { name: '恢复为新案件' }));
 
     expect(
       await screen.findByText(`Case name "Existing Case" already exists in workspace "${workspace.id}".`),

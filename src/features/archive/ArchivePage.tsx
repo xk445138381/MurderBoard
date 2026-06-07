@@ -65,26 +65,24 @@ export function ArchivePage() {
     <section aria-labelledby="archive-title" className="stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Phase 6</p>
-          <h1 id="archive-title">Archive</h1>
+<h1 id="archive-title">归档管理</h1>
         </div>
         <p>
-          Restore archived cases by creating a new active copy in the selected workspace. The
-          original archived case stays unchanged.
+          通过在工作区创建新的活跃副本来恢复归档案件。原始归档案件保持不变。
         </p>
       </div>
 
-      {errorMessage ? <ErrorState title="Archive action failed" message={errorMessage} /> : null}
-      {isLoading ? <LoadingState message="Loading archive..." /> : null}
+      {errorMessage ? <ErrorState title="归档操作失败" message={errorMessage} /> : null}
+      {isLoading ? <LoadingState message="加载归档中..." /> : null}
 
       {archivedCases.length > 0 ? (
-        <section aria-label="Search archived cases" className="panel form-grid">
+        <section aria-label="搜索归档案件" className="panel form-grid">
           <div>
-            <label htmlFor="archive-search">Search archived cases</label>
+            <label htmlFor="archive-search">搜索归档案件</label>
             <input
               id="archive-search"
               onChange={(event) => setArchiveQuery(event.target.value)}
-              placeholder="Filter by name, summary, workspace, or archive time"
+              placeholder="按名称、摘要、工作区或归档时间筛选"
               value={archiveQuery}
             />
           </div>
@@ -93,17 +91,17 @@ export function ArchivePage() {
 
       {!isLoading && archivedCases.length === 0 ? (
         <EmptyState
-          title="Archive is empty"
-          message="Archived cases from the Cases page appear here."
+          title="暂无归档"
+          message="来自案件页面的归档案件将显示在此处。"
         />
       ) : null}
 
       {!isLoading && archivedCases.length > 0 && filteredArchivedCases.length === 0 ? (
-        <EmptyState title="No archived cases found" message="Adjust the archive search." />
+        <EmptyState title="未找到匹配的归档案件" message="调整归档搜索条件。" />
       ) : null}
 
       {filteredArchivedCases.length > 0 ? (
-        <div aria-label="Archived cases" className="stack">
+        <div aria-label="已归档案件" className="stack">
           {filteredArchivedCases.map((caseRecord) => (
             <ArchivedCaseCard
               caseRecord={caseRecord}
@@ -153,20 +151,20 @@ function ArchivedCaseCard({
 
   return (
     <article className="panel">
-      <form aria-label={`Restore archived case ${caseRecord.name}`} className="form-grid" onSubmit={handleSubmit}>
+      <form aria-label={`恢复已归档案件 ${caseRecord.name}`} className="form-grid" onSubmit={handleSubmit}>
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Archived case</p>
+            <p className="eyebrow">已归档案件</p>
             <h2>{caseRecord.name}</h2>
-            <p>{sourceWorkspace ? `From ${sourceWorkspace.name}` : 'Source workspace unavailable'}</p>
+            <p>{sourceWorkspace ? `来源 ${sourceWorkspace.name}` : '源工作区不可用'}</p>
           </div>
           <span className="badge">
-            Archived {formatDateTime(caseRecord.archivedAt ?? caseRecord.updatedAt)}
+            归档于 {formatDateTime(caseRecord.archivedAt ?? caseRecord.updatedAt)}
           </span>
         </div>
         {caseRecord.summary ? <p>{caseRecord.summary}</p> : null}
         <div>
-          <label htmlFor={`archive-target-workspace-${caseRecord.id}`}>Target workspace</label>
+          <label htmlFor={`archive-target-workspace-${caseRecord.id}`}>目标工作区</label>
           <select
             id={`archive-target-workspace-${caseRecord.id}`}
             onChange={(event) => setTargetWorkspaceId(event.target.value)}
@@ -180,7 +178,7 @@ function ArchivedCaseCard({
           </select>
         </div>
         <div>
-          <label htmlFor={`archive-restored-name-${caseRecord.id}`}>Restored case name</label>
+          <label htmlFor={`archive-restored-name-${caseRecord.id}`}>恢复后案件名称</label>
           <input
             id={`archive-restored-name-${caseRecord.id}`}
             onChange={(event) => setName(event.target.value)}
@@ -188,7 +186,7 @@ function ArchivedCaseCard({
           />
         </div>
         <button disabled={!targetWorkspaceId} type="submit">
-          Restore as new case
+          恢复为新案件
         </button>
       </form>
     </article>
@@ -204,7 +202,7 @@ function formatActionError(error: unknown) {
     return error.message;
   }
 
-  return 'Unknown archive error.';
+  return '未知归档错误';
 }
 
 function formatDateTime(value: string) {

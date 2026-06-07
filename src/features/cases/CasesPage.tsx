@@ -106,16 +106,15 @@ export function CasesPage() {
     <section aria-labelledby="cases-title" className="stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Phase 7</p>
-          <h1 id="cases-title">Cases</h1>
+          <h1 id="cases-title">案件管理</h1>
         </div>
         <p>
-          Create, search, copy, move, import, archive, and trash local-first mystery cases.
+          创建、搜索、复制、移动、导入、归档和回收本地优先的谜案。
         </p>
       </div>
 
-      {errorMessage ? <ErrorState title="Action failed" message={errorMessage} /> : null}
-      {isLoading ? <LoadingState message="Loading case boards..." /> : null}
+      {errorMessage ? <ErrorState title="操作失败" message={errorMessage} /> : null}
+      {isLoading ? <LoadingState message="加载中..." /> : null}
 
       <CreateWorkspaceForm
         onCreate={(input) =>
@@ -128,20 +127,20 @@ export function CasesPage() {
 
       {workspaces.length === 0 && !isLoading ? (
         <EmptyState
-          title="No workspaces yet"
-          message="Create a workspace to group related mystery cases."
+          title="暂无工作区"
+          message="创建工作区以分组相关谜案。"
         />
       ) : null}
 
       {workspaces.length > 0 ? (
         <div className="case-management-grid">
-          <aside className="panel form-grid" aria-label="Workspaces">
-            <h2>Workspaces</h2>
-            <label htmlFor="workspace-search">Search workspaces</label>
+          <aside className="panel form-grid" aria-label="工作区列表">
+            <h2>工作区</h2>
+            <label htmlFor="workspace-search">搜索工作区</label>
             <input
               id="workspace-search"
               onChange={(event) => setWorkspaceQuery(event.target.value)}
-              placeholder="Filter by name or description"
+              placeholder="按名称或描述筛选"
               value={workspaceQuery}
             />
             <div className="item-list">
@@ -160,12 +159,12 @@ export function CasesPage() {
                   type="button"
                 >
                   <span>{workspace.name}</span>
-                  <small>{workspace.description || 'No description'}</small>
+                  <small>{workspace.description || '无描述'}</small>
                 </button>
               ))}
             </div>
             {filteredWorkspaces.length === 0 ? (
-              <p className="muted">No workspaces match the current search.</p>
+              <p className="muted">无匹配工作区</p>
             ) : null}
           </aside>
 
@@ -176,7 +175,7 @@ export function CasesPage() {
                   workspace={selectedWorkspace}
                   onDelete={() =>
                     runAction(async () => {
-                      if (!confirmDestructiveAction(`Move workspace "${selectedWorkspace.name}" to trash?`)) {
+                      if (!confirmDestructiveAction(`将工作区"${selectedWorkspace.name}"移至回收站？`)) {
                         return selectedWorkspace.id;
                       }
                       await repository.softDeleteWorkspace(selectedWorkspace.id);
@@ -208,10 +207,10 @@ export function CasesPage() {
                   cases={filteredCases}
                   emptyMessage={
                     cases.length === 0
-                      ? 'Create a case inside the selected workspace.'
-                      : 'No cases match the current search or status filter.'
+                      ? '在所选工作区中创建一个案件。'
+                      : '无案件匹配当前搜索或状态筛选。'
                   }
-                  emptyTitle={cases.length === 0 ? 'No cases yet' : 'No cases found'}
+                  emptyTitle={cases.length === 0 ? '暂无案件' : '无匹配案件'}
                   onCopy={(caseId, input) =>
                     runAction(async () => {
                       const copiedCase = await repository.copyCase(caseId, input);
@@ -235,7 +234,7 @@ export function CasesPage() {
                       const caseRecord = cases.find((candidate) => candidate.id === caseId);
                       if (
                         caseRecord &&
-                        !confirmDestructiveAction(`Move case "${caseRecord.name}" to trash?`)
+                        !confirmDestructiveAction(`将案件"${caseRecord.name}"移至回收站？`)
                       ) {
                         return selectedWorkspace.id;
                       }
@@ -285,26 +284,26 @@ function CreateWorkspaceForm({ onCreate }: CreateWorkspaceFormProps) {
   }
 
   return (
-    <form aria-label="Create workspace" className="panel form-grid" onSubmit={handleSubmit}>
+    <form aria-label="创建工作区" className="panel form-grid" onSubmit={handleSubmit}>
       <div>
-        <label htmlFor="workspace-name">Workspace name</label>
+        <label htmlFor="workspace-name">工作区名称</label>
         <input
           id="workspace-name"
           onChange={(event) => setName(event.target.value)}
-          placeholder="e.g. Red Chamber Mystery"
+          placeholder="例如：红楼梦谜案"
           value={name}
         />
       </div>
       <div>
-        <label htmlFor="workspace-description">Description</label>
+        <label htmlFor="workspace-description">描述</label>
         <input
           id="workspace-description"
           onChange={(event) => setDescription(event.target.value)}
-          placeholder="Optional story or campaign notes"
+          placeholder="可选的故事或战役备注"
           value={description}
         />
       </div>
-      <button type="submit">Create workspace</button>
+      <button type="submit">创建工作区</button>
     </form>
   );
 }
@@ -330,16 +329,16 @@ function WorkspaceEditor({ onDelete, onSave, workspace }: WorkspaceEditorProps) 
   }
 
   return (
-    <form aria-label="Edit workspace" className="panel form-grid" onSubmit={handleSubmit}>
+    <form aria-label="编辑工作区" className="panel form-grid" onSubmit={handleSubmit}>
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">Selected workspace</p>
+          <p className="eyebrow">当前工作区</p>
           <h2>{workspace.name}</h2>
         </div>
-        <span className="badge">Updated {formatDateTime(workspace.updatedAt)}</span>
+        <span className="badge">更新于 {formatDateTime(workspace.updatedAt)}</span>
       </div>
       <div>
-        <label htmlFor="selected-workspace-name">Workspace name</label>
+        <label htmlFor="selected-workspace-name">工作区名称</label>
         <input
           id="selected-workspace-name"
           onChange={(event) => setName(event.target.value)}
@@ -347,7 +346,7 @@ function WorkspaceEditor({ onDelete, onSave, workspace }: WorkspaceEditorProps) 
         />
       </div>
       <div>
-        <label htmlFor="selected-workspace-description">Description</label>
+        <label htmlFor="selected-workspace-description">描述</label>
         <textarea
           id="selected-workspace-description"
           onChange={(event) => setDescription(event.target.value)}
@@ -356,9 +355,9 @@ function WorkspaceEditor({ onDelete, onSave, workspace }: WorkspaceEditorProps) 
         />
       </div>
       <div className="button-row">
-        <button type="submit">Save workspace</button>
+        <button type="submit">保存工作区</button>
         <button onClick={onDelete} type="button">
-          Delete workspace
+          删除工作区
         </button>
       </div>
     </form>
@@ -383,19 +382,19 @@ function CaseFilters({
   statusFilter,
 }: CaseFiltersProps) {
   return (
-    <section aria-label="Filter cases" className="panel form-grid">
-      <h2>Search and filter cases</h2>
+    <section aria-label="筛选案件" className="panel form-grid">
+      <h2>搜索和筛选案件</h2>
       <div>
-        <label htmlFor="case-search">Search cases</label>
+        <label htmlFor="case-search">搜索案件</label>
         <input
           id="case-search"
           onChange={(event) => onCaseQueryChange(event.target.value)}
-          placeholder="Filter by name, summary, or status"
+          placeholder="按名称、摘要或状态筛选"
           value={caseQuery}
         />
       </div>
       <div>
-        <label htmlFor="case-status-filter">Status filter</label>
+        <label htmlFor="case-status-filter">状态筛选</label>
         <select
           id="case-status-filter"
           onChange={(event) =>
@@ -403,7 +402,7 @@ function CaseFilters({
           }
           value={statusFilter}
         >
-          <option value="all">All statuses</option>
+          <option value="all">全部状态</option>
           {EDITABLE_CASE_STATUSES.map((caseStatus) => (
             <option key={caseStatus} value={caseStatus}>
               {caseStatus}
@@ -429,19 +428,19 @@ function CreateCaseForm({ onCreate }: CreateCaseFormProps) {
   }
 
   return (
-    <form aria-label="Create case" className="panel form-grid" onSubmit={handleSubmit}>
-      <h2>Create case</h2>
+    <form aria-label="创建案件" className="panel form-grid" onSubmit={handleSubmit}>
+      <h2>创建案件</h2>
       <div>
-        <label htmlFor="case-name">Case name</label>
+        <label htmlFor="case-name">案件名称</label>
         <input
           id="case-name"
           onChange={(event) => setName(event.target.value)}
-          placeholder="e.g. First Night"
+          placeholder="例如：第一夜"
           value={name}
         />
       </div>
       <div>
-        <label htmlFor="case-summary">Summary</label>
+        <label htmlFor="case-summary">摘要</label>
         <textarea
           id="case-summary"
           onChange={(event) => setSummary(event.target.value)}
@@ -450,7 +449,7 @@ function CreateCaseForm({ onCreate }: CreateCaseFormProps) {
         />
       </div>
       <div>
-        <label htmlFor="case-status">Status</label>
+        <label htmlFor="case-status">状态</label>
         <select
           id="case-status"
           onChange={(event) => setStatus(event.target.value as RestorableCaseStatus)}
@@ -463,7 +462,7 @@ function CreateCaseForm({ onCreate }: CreateCaseFormProps) {
           ))}
         </select>
       </div>
-      <button type="submit">Create case</button>
+      <button type="submit">创建案件</button>
     </form>
   );
 }
@@ -496,8 +495,8 @@ function CaseList({
   }
 
   return (
-    <div className="stack" aria-label="Cases list">
-      <h2>Cases in workspace</h2>
+    <div className="stack" aria-label="案件列表">
+      <h2>工作区中的案件</h2>
       {cases.map((caseRecord) => (
         <CaseEditor
           caseRecord={caseRecord}
@@ -538,7 +537,7 @@ function CaseEditor({
   const [status, setStatus] = useState<RestorableCaseStatus>(
     caseRecord.status === 'deleted' ? 'draft' : caseRecord.status,
   );
-  const [copyName, setCopyName] = useState(`Copy of ${caseRecord.name}`);
+  const [copyName, setCopyName] = useState(`${caseRecord.name} 的副本`);
   const [copyTargetWorkspaceId, setCopyTargetWorkspaceId] = useState(caseRecord.workspaceId);
   const [moveName, setMoveName] = useState(caseRecord.name);
   const [moveTargetWorkspaceId, setMoveTargetWorkspaceId] = useState(caseRecord.workspaceId);
@@ -547,7 +546,7 @@ function CaseEditor({
     setName(caseRecord.name);
     setSummary(caseRecord.summary);
     setStatus(caseRecord.status === 'deleted' ? 'draft' : caseRecord.status);
-    setCopyName(`Copy of ${caseRecord.name}`);
+    setCopyName(`${caseRecord.name} 的副本`);
     setCopyTargetWorkspaceId(caseRecord.workspaceId);
     setMoveName(caseRecord.name);
     setMoveTargetWorkspaceId(caseRecord.workspaceId);
@@ -560,16 +559,16 @@ function CaseEditor({
 
   return (
     <article className="panel">
-      <form aria-label={`Edit case ${caseRecord.name}`} className="form-grid" onSubmit={handleSubmit}>
+      <form aria-label={`编辑案件 ${caseRecord.name}`} className="form-grid" onSubmit={handleSubmit}>
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Case detail</p>
+            <p className="eyebrow">案件详情</p>
             <h3>{caseRecord.name}</h3>
           </div>
           <span className="badge">{caseRecord.status}</span>
         </div>
         <div>
-          <label htmlFor={`case-name-${caseRecord.id}`}>Case name</label>
+          <label htmlFor={`case-name-${caseRecord.id}`}>案件名称</label>
           <input
             id={`case-name-${caseRecord.id}`}
             onChange={(event) => setName(event.target.value)}
@@ -577,7 +576,7 @@ function CaseEditor({
           />
         </div>
         <div>
-          <label htmlFor={`case-summary-${caseRecord.id}`}>Summary</label>
+          <label htmlFor={`case-summary-${caseRecord.id}`}>摘要</label>
           <textarea
             id={`case-summary-${caseRecord.id}`}
             onChange={(event) => setSummary(event.target.value)}
@@ -586,7 +585,7 @@ function CaseEditor({
           />
         </div>
         <div>
-          <label htmlFor={`case-status-${caseRecord.id}`}>Status</label>
+          <label htmlFor={`case-status-${caseRecord.id}`}>状态</label>
           <select
             id={`case-status-${caseRecord.id}`}
             onChange={(event) => setStatus(event.target.value as RestorableCaseStatus)}
@@ -600,23 +599,23 @@ function CaseEditor({
           </select>
         </div>
         <div className="button-row">
-          <button type="submit">Save case</button>
+          <button type="submit">保存案件</button>
           <button
             disabled={caseRecord.status === 'archived'}
             onClick={() => onArchive(caseRecord.id)}
             type="button"
           >
-            Archive case
+            归档案件
           </button>
           <button onClick={() => onDelete(caseRecord.id)} type="button">
-            Delete case
+            删除案件
           </button>
         </div>
       </form>
-      <section aria-label={`Copy or move case ${caseRecord.name}`} className="form-grid nested-panel">
-        <h4>Copy or move</h4>
+      <section aria-label={`复制或移动案件 ${caseRecord.name}`} className="form-grid nested-panel">
+        <h4>复制或移动</h4>
         <div>
-          <label htmlFor={`case-copy-name-${caseRecord.id}`}>Copy name</label>
+          <label htmlFor={`case-copy-name-${caseRecord.id}`}>复制名称</label>
           <input
             id={`case-copy-name-${caseRecord.id}`}
             onChange={(event) => setCopyName(event.target.value)}
@@ -624,7 +623,7 @@ function CaseEditor({
           />
         </div>
         <div>
-          <label htmlFor={`case-copy-workspace-${caseRecord.id}`}>Copy target workspace</label>
+          <label htmlFor={`case-copy-workspace-${caseRecord.id}`}>目标工作区</label>
           <select
             id={`case-copy-workspace-${caseRecord.id}`}
             onChange={(event) => setCopyTargetWorkspaceId(event.target.value)}
@@ -646,10 +645,10 @@ function CaseEditor({
           }
           type="button"
         >
-          Copy case
+          复制案件
         </button>
         <div>
-          <label htmlFor={`case-move-name-${caseRecord.id}`}>Move name</label>
+          <label htmlFor={`case-move-name-${caseRecord.id}`}>移动名称</label>
           <input
             id={`case-move-name-${caseRecord.id}`}
             onChange={(event) => setMoveName(event.target.value)}
@@ -657,7 +656,7 @@ function CaseEditor({
           />
         </div>
         <div>
-          <label htmlFor={`case-move-workspace-${caseRecord.id}`}>Move target workspace</label>
+          <label htmlFor={`case-move-workspace-${caseRecord.id}`}>目标工作区</label>
           <select
             id={`case-move-workspace-${caseRecord.id}`}
             onChange={(event) => setMoveTargetWorkspaceId(event.target.value)}
@@ -679,7 +678,7 @@ function CaseEditor({
           }
           type="button"
         >
-          Move case
+          移动案件
         </button>
       </section>
     </article>
@@ -730,7 +729,7 @@ function ImportCaseForm({ onImport, onPreview }: ImportCaseFormProps) {
       return JSON.parse(jsonText) as CaseImportInput;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invalid JSON.';
-      setLocalError(`Invalid import JSON: ${message}`);
+      setLocalError(`无效的导入 JSON：${message}`);
       return null;
     }
   }
@@ -760,18 +759,18 @@ function ImportCaseForm({ onImport, onPreview }: ImportCaseFormProps) {
   }
 
   return (
-    <section aria-label="Import case JSON" className="panel form-grid">
+    <section aria-label="导入案件 JSON" className="panel form-grid">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">Import</p>
-          <h2>Import case JSON</h2>
+          <p className="eyebrow">导入</p>
+          <h2>导入案件 JSON</h2>
         </div>
       </div>
       <p className="muted">
-        Paste a case snapshot, preview name conflicts, then import it into the selected workspace.
+        粘贴案件快照，预览名称冲突，然后导入到所选工作区。
       </p>
       <div>
-        <label htmlFor="case-import-json">Case JSON</label>
+        <label htmlFor="case-import-json">案件 JSON</label>
         <textarea
           id="case-import-json"
           onChange={(event) => setJsonText(event.target.value)}
@@ -781,21 +780,21 @@ function ImportCaseForm({ onImport, onPreview }: ImportCaseFormProps) {
       </div>
       <div className="button-row">
         <button onClick={handlePreview} type="button">
-          Preview import
+          导入预览
         </button>
         <button disabled={preview?.canImport === false} onClick={handleImport} type="button">
-          Import case
+          导入案件
         </button>
       </div>
-      {localError ? <ErrorState title="Import failed" message={localError} /> : null}
+      {localError ? <ErrorState title="导入失败" message={localError} /> : null}
       {preview ? (
         <div className="nested-panel" role="status">
           <p>
-            Previewed <strong>{preview.name}</strong>: {preview.counts.characters} characters,{' '}
-            {preview.counts.clues} clues, {preview.counts.events} events.
+            预览 <strong>{preview.name}</strong>：{preview.counts.characters} 个角色，{' '}
+            {preview.counts.clues} 条线索，{preview.counts.events} 个事件。
           </p>
           {preview.canImport ? (
-            <p className="badge">Ready to import</p>
+            <p className="badge">准备导入</p>
           ) : (
             <ul>
               {preview.conflicts.map((conflict) => (
@@ -818,7 +817,7 @@ function formatActionError(error: unknown) {
     return error.message;
   }
 
-  return 'Unknown storage error.';
+  return '未知存储错误';
 }
 
 function formatDateTime(value: string) {

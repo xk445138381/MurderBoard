@@ -46,13 +46,13 @@ describe('TrashPage', () => {
     await repository.softDeleteCase(caseRecord.id);
     renderTrashPage(repository);
 
-    const trashEntries = await screen.findByLabelText('Trash entries');
+    const trashEntries = await screen.findByLabelText('回收站条目');
     const entry = within(trashEntries).getByRole('heading', { name: 'First Night' }).closest('article');
     expect(entry).not.toBeNull();
 
-    await user.click(within(entry as HTMLElement).getByRole('button', { name: 'Restore' }));
+    await user.click(within(entry as HTMLElement).getByRole('button', { name: '恢复' }));
 
-    expect(await screen.findByText('Trash is empty')).toBeInTheDocument();
+    expect(await screen.findByText('回收站为空')).toBeInTheDocument();
     expect(await repository.getCase(caseRecord.id)).toMatchObject({
       status: 'active',
       deletedAt: null,
@@ -70,15 +70,15 @@ describe('TrashPage', () => {
     await repository.softDeleteCharacter(character.id);
     renderTrashPage(repository);
 
-    const trashEntries = await screen.findByLabelText('Trash entries');
+    const trashEntries = await screen.findByLabelText('回收站条目');
     const entry = within(trashEntries).getByRole('heading', { name: 'Detective' }).closest('article');
     expect(entry).not.toBeNull();
 
     await user.click(
-      within(entry as HTMLElement).getByRole('button', { name: 'Permanently delete' }),
+      within(entry as HTMLElement).getByRole('button', { name: '永久删除' }),
     );
 
-    expect(await screen.findByText('Trash is empty')).toBeInTheDocument();
+    expect(await screen.findByText('回收站为空')).toBeInTheDocument();
     expect(await repository.listCharacters(caseRecord.id, { includeDeleted: true })).toEqual([]);
 
     await closeClient(client);

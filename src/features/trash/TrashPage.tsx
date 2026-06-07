@@ -6,11 +6,11 @@ import type { TrashEntry } from '../../storage/repositories';
 import { StorageDomainError } from '../../storage/storage-error';
 
 const RESOURCE_LABELS: Record<TrashEntry['resourceType'], string> = {
-  workspace: 'Workspace',
-  case: 'Case',
-  character: 'Character',
-  clue: 'Clue',
-  event: 'Event',
+  workspace: '工作区',
+  case: '案件',
+  character: '人物',
+  clue: '线索',
+  event: '事件',
 };
 
 export function TrashPage() {
@@ -70,14 +70,13 @@ export function TrashPage() {
     <section aria-labelledby="trash-title" className="stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Phase 5</p>
-          <h1 id="trash-title">Trash</h1>
+<h1 id="trash-title">回收站</h1>
         </div>
-        <p>Review soft-deleted resources, restore recoverable items, or permanently delete them.</p>
+        <p>查看已软删除的资源，恢复可恢复的项目，或永久删除它们。</p>
       </div>
 
-      {errorMessage ? <ErrorState title="Trash action failed" message={errorMessage} /> : null}
-      {isLoading ? <LoadingState message="Loading trash..." /> : null}
+      {errorMessage ? <ErrorState title="回收站操作失败" message={errorMessage} /> : null}
+      {isLoading ? <LoadingState message="加载回收站中..." /> : null}
 
       {trashEntries.length > 0 ? (
         <TrashFilters
@@ -89,24 +88,24 @@ export function TrashPage() {
       ) : null}
 
       {!isLoading && trashEntries.length === 0 ? (
-        <EmptyState title="Trash is empty" message="Deleted workspaces, cases, people, clues, and events appear here." />
+        <EmptyState title="回收站为空" message="已删除的工作区、案件、人物、线索和事件将显示在此处。" />
       ) : null}
 
       {!isLoading && trashEntries.length > 0 && filteredTrashEntries.length === 0 ? (
-        <EmptyState title="No trash entries found" message="Adjust the search or type filter." />
+        <EmptyState title="未找到匹配的回收站条目" message="调整搜索或类型筛选条件。" />
       ) : null}
 
       {filteredTrashEntries.length > 0 ? (
-        <div aria-label="Trash entries" className="stack">
+        <div aria-label="回收站条目" className="stack">
           {filteredTrashEntries.map((entry) => (
             <article className="panel" key={entry.id}>
               <div className="panel-heading">
                 <div>
                   <p className="eyebrow">{RESOURCE_LABELS[entry.resourceType]}</p>
                   <h2>{entry.label}</h2>
-                  {entry.parentLabel ? <p>From {entry.parentLabel}</p> : null}
+                  {entry.parentLabel ? <p>来源 {entry.parentLabel}</p> : null}
                 </div>
-                <span className="badge">Deleted {formatDateTime(entry.deletedAt)}</span>
+                <span className="badge">删除于 {formatDateTime(entry.deletedAt)}</span>
               </div>
               <div className="button-row">
                 <button
@@ -117,14 +116,14 @@ export function TrashPage() {
                   }
                   type="button"
                 >
-                  Restore
+                  恢复
                 </button>
                 <button
                   onClick={() =>
                     runAction(async () => {
                       if (
                         !confirmDestructiveAction(
-                          `Permanently delete ${RESOURCE_LABELS[entry.resourceType].toLowerCase()} "${entry.label}"? This cannot be undone.`,
+                          `确定要永久删除 ${RESOURCE_LABELS[entry.resourceType].toLowerCase()} "${entry.label}"？此操作不可撤销。`,
                         )
                       ) {
                         return;
@@ -134,7 +133,7 @@ export function TrashPage() {
                   }
                   type="button"
                 >
-                  Permanently delete
+                  永久删除
                 </button>
               </div>
             </article>
@@ -159,19 +158,19 @@ function TrashFilters({
   trashQuery,
 }: TrashFiltersProps) {
   return (
-    <section aria-label="Filter trash" className="panel form-grid">
-      <h2>Search and filter trash</h2>
+    <section aria-label="筛选回收站" className="panel form-grid">
+      <h2>搜索和筛选回收站</h2>
       <div>
-        <label htmlFor="trash-search">Search trash</label>
+        <label htmlFor="trash-search">搜索回收站</label>
         <input
           id="trash-search"
           onChange={(event) => onTrashQueryChange(event.target.value)}
-          placeholder="Filter by name, parent, type, or deleted time"
+          placeholder="按名称、来源、类型或删除时间筛选"
           value={trashQuery}
         />
       </div>
       <div>
-        <label htmlFor="trash-type-filter">Type filter</label>
+        <label htmlFor="trash-type-filter">类型筛选</label>
         <select
           id="trash-type-filter"
           onChange={(event) =>
@@ -179,7 +178,7 @@ function TrashFilters({
           }
           value={resourceFilter}
         >
-          <option value="all">All types</option>
+          <option value="all">全部类型</option>
           {(Object.keys(RESOURCE_LABELS) as TrashEntry['resourceType'][]).map((resourceType) => (
             <option key={resourceType} value={resourceType}>
               {RESOURCE_LABELS[resourceType]}
@@ -200,7 +199,7 @@ function formatActionError(error: unknown) {
     return error.message;
   }
 
-  return 'Unknown trash error.';
+  return '未知回收站错误';
 }
 
 function formatDateTime(value: string) {

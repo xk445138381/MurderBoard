@@ -49,25 +49,25 @@ describe('phase 4 pages', () => {
     await createCaseScope(repository);
     renderWithRepository(repository, <EntitiesPage />);
 
-    const createForm = await screen.findByRole('form', { name: 'Create character' });
-    await user.type(within(createForm).getByLabelText('Name'), 'Detective');
-    await user.type(within(createForm).getByLabelText('Role'), 'Investigator');
-    await user.type(within(createForm).getByLabelText('Notes'), 'Keeps a private notebook.');
-    await user.click(within(createForm).getByRole('button', { name: 'Create character' }));
+    const createForm = await screen.findByRole('form', { name: '创建人物' });
+    await user.type(within(createForm).getByLabelText('姓名'), 'Detective');
+    await user.type(within(createForm).getByLabelText('角色'), 'Investigator');
+    await user.type(within(createForm).getByLabelText('备注'), 'Keeps a private notebook.');
+    await user.click(within(createForm).getByRole('button', { name: '创建人物' }));
 
-    const editForm = await screen.findByRole('form', { name: 'Edit character Detective' });
-    await user.clear(within(editForm).getByLabelText('Name'));
-    await user.type(within(editForm).getByLabelText('Name'), 'Senior Detective');
-    await user.click(within(editForm).getByRole('button', { name: 'Save character' }));
+    const editForm = await screen.findByRole('form', { name: '编辑人物 Detective' });
+    await user.clear(within(editForm).getByLabelText('姓名'));
+    await user.type(within(editForm).getByLabelText('姓名'), 'Senior Detective');
+    await user.click(within(editForm).getByRole('button', { name: '保存人物' }));
 
     const renamedForm = await screen.findByRole('form', {
-      name: 'Edit character Senior Detective',
+      name: '编辑人物 Senior Detective',
     });
     expect(within(renamedForm).getByDisplayValue('Senior Detective')).toBeInTheDocument();
 
-    await user.click(within(renamedForm).getByRole('button', { name: 'Delete character' }));
+    await user.click(within(renamedForm).getByRole('button', { name: '删除人物' }));
 
-    expect(await screen.findByText('No characters yet')).toBeInTheDocument();
+    expect(await screen.findByText('暂无人物')).toBeInTheDocument();
     await closeClient(client);
   });
 
@@ -77,29 +77,29 @@ describe('phase 4 pages', () => {
     await createCaseScope(repository);
     renderWithRepository(repository, <EvidencePage />);
 
-    const createForm = await screen.findByRole('form', { name: 'Create clue' });
-    await user.type(within(createForm).getByLabelText('Title'), 'Pocket watch');
-    await user.type(within(createForm).getByLabelText('Source'), 'Library');
+    const createForm = await screen.findByRole('form', { name: '创建线索' });
+    await user.type(within(createForm).getByLabelText('标题'), 'Pocket watch');
+    await user.type(within(createForm).getByLabelText('来源'), 'Library');
     await user.type(
-      within(createForm).getByLabelText('Discovered at'),
+      within(createForm).getByLabelText('发现时间'),
       '2026-01-01T20:00:00+08:00',
     );
-    await user.type(within(createForm).getByLabelText('Content'), 'Stopped at 8 PM.');
-    await user.click(within(createForm).getByRole('button', { name: 'Create clue' }));
+    await user.type(within(createForm).getByLabelText('内容'), 'Stopped at 8 PM.');
+    await user.click(within(createForm).getByRole('button', { name: '创建线索' }));
 
-    const editForm = await screen.findByRole('form', { name: 'Edit clue Pocket watch' });
-    await user.clear(within(editForm).getByLabelText('Title'));
-    await user.type(within(editForm).getByLabelText('Title'), 'Broken pocket watch');
-    await user.click(within(editForm).getByRole('button', { name: 'Save clue' }));
+    const editForm = await screen.findByRole('form', { name: '编辑线索 Pocket watch' });
+    await user.clear(within(editForm).getByLabelText('标题'));
+    await user.type(within(editForm).getByLabelText('标题'), 'Broken pocket watch');
+    await user.click(within(editForm).getByRole('button', { name: '保存线索' }));
 
     const renamedForm = await screen.findByRole('form', {
-      name: 'Edit clue Broken pocket watch',
+      name: '编辑线索 Broken pocket watch',
     });
     expect(within(renamedForm).getByDisplayValue('Broken pocket watch')).toBeInTheDocument();
 
-    await user.click(within(renamedForm).getByRole('button', { name: 'Delete clue' }));
+    await user.click(within(renamedForm).getByRole('button', { name: '删除线索' }));
 
-    expect(await screen.findByText('No clues yet')).toBeInTheDocument();
+    expect(await screen.findByText('暂无线索')).toBeInTheDocument();
     await closeClient(client);
   });
 
@@ -111,25 +111,25 @@ describe('phase 4 pages', () => {
     await repository.createClue(caseRecord.id, { title: 'Footprint' });
     renderWithRepository(repository, <TimelinePage />);
 
-    const createForm = await screen.findByRole('form', { name: 'Create event' });
-    await user.type(within(createForm).getByLabelText('Title'), 'Later event');
+    const createForm = await screen.findByRole('form', { name: '创建事件' });
+    await user.type(within(createForm).getByLabelText('标题'), 'Later event');
     await user.type(
-      within(createForm).getByLabelText('Occurred at'),
+      within(createForm).getByLabelText('发生时间'),
       '2026-01-01T20:00:00+08:00',
     );
     await user.click(within(createForm).getByLabelText('Detective'));
     await user.click(within(createForm).getByLabelText('Footprint'));
-    await user.click(within(createForm).getByRole('button', { name: 'Create event' }));
+    await user.click(within(createForm).getByRole('button', { name: '创建事件' }));
 
-    expect(await screen.findByText('Characters: Detective · Clues: Footprint')).toBeInTheDocument();
+    expect(await screen.findByText('人物：Detective · 线索：Footprint')).toBeInTheDocument();
 
-    const secondCreateForm = screen.getByRole('form', { name: 'Create event' });
-    await user.type(within(secondCreateForm).getByLabelText('Title'), 'Earlier event');
+    const secondCreateForm = screen.getByRole('form', { name: '创建事件' });
+    await user.type(within(secondCreateForm).getByLabelText('标题'), 'Earlier event');
     await user.type(
-      within(secondCreateForm).getByLabelText('Occurred at'),
+      within(secondCreateForm).getByLabelText('发生时间'),
       '2026-01-01T19:00:00+08:00',
     );
-    await user.click(within(secondCreateForm).getByRole('button', { name: 'Create event' }));
+    await user.click(within(secondCreateForm).getByRole('button', { name: '创建事件' }));
 
     const earlierHeading = await screen.findByRole('heading', { name: 'Earlier event' });
     const laterHeading = screen.getByRole('heading', { name: 'Later event' });
@@ -137,13 +137,13 @@ describe('phase 4 pages', () => {
       earlierHeading.compareDocumentPosition(laterHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
-    const editForm = screen.getByRole('form', { name: 'Edit event Earlier event' });
-    await user.clear(within(editForm).getByLabelText('Title'));
-    await user.type(within(editForm).getByLabelText('Title'), 'Earliest event');
-    await user.click(within(editForm).getByRole('button', { name: 'Save event' }));
+    const editForm = screen.getByRole('form', { name: '编辑事件 Earlier event' });
+    await user.clear(within(editForm).getByLabelText('标题'));
+    await user.type(within(editForm).getByLabelText('标题'), 'Earliest event');
+    await user.click(within(editForm).getByRole('button', { name: '保存事件' }));
 
-    const renamedForm = await screen.findByRole('form', { name: 'Edit event Earliest event' });
-    await user.click(within(renamedForm).getByRole('button', { name: 'Delete event' }));
+    const renamedForm = await screen.findByRole('form', { name: '编辑事件 Earliest event' });
+    await user.click(within(renamedForm).getByRole('button', { name: '删除事件' }));
 
     expect(await screen.findByRole('heading', { name: 'Later event' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Earliest event' })).not.toBeInTheDocument();

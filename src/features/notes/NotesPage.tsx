@@ -3,8 +3,8 @@ import { RouteStubPage } from '../route-stub/RouteStubPage';
 export function NotesPage() {
   return (
     <RouteStubPage
-      title="Notes"
-      message="Case notes and analysis drafts will appear here."
+      title="笔记"
+      message="案件笔记和分析草稿将在此处显示。"
     />
   );
 }

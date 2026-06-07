@@ -75,10 +75,9 @@ export function EvidencePage() {
     <section aria-labelledby="evidence-title" className="stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Phase 4</p>
-          <h1 id="evidence-title">Evidence</h1>
+          <h1 id="evidence-title">线索管理</h1>
         </div>
-        <p>Capture clues, sources, content, and structured discovery times.</p>
+        <p>记录线索、来源、内容和发现时间。</p>
       </div>
 
       <CaseScopeSelector
@@ -94,8 +93,8 @@ export function EvidencePage() {
         workspaces={workspaces}
       />
 
-      {errorMessage ? <ErrorState title="Action failed" message={errorMessage} /> : null}
-      {isLoadingClues ? <LoadingState message="Loading clues..." /> : null}
+      {errorMessage ? <ErrorState title="操作失败" message={errorMessage} /> : null}
+      {isLoadingClues ? <LoadingState message="加载中..." /> : null}
 
       {selectedCase ? (
         <>
@@ -108,23 +107,23 @@ export function EvidencePage() {
             }
           />
           <ListSearch
-            label="Search clues"
+            label="搜索线索"
             onSearchChange={setClueQuery}
-            placeholder="Filter by title, source, content, or date"
+            placeholder="按标题、来源、内容或日期筛选"
             searchValue={clueQuery}
           />
           <ClueList
             clues={filteredClues}
             emptyMessage={
               clues.length === 0
-                ? 'Add evidence, testimony, or discoveries.'
-                : 'No clues match the current search.'
+                ? '添加证据、证词或发现。'
+                : '没有找到匹配的线索。'
             }
-            emptyTitle={clues.length === 0 ? 'No clues yet' : 'No clues found'}
+            emptyTitle={clues.length === 0 ? '暂无线索' : '未找到线索'}
             onDelete={(clueId) =>
               runAction(async () => {
                 const clue = clues.find((candidate) => candidate.id === clueId);
-                if (clue && !confirmDestructiveAction(`Move clue "${clue.title}" to trash?`)) {
+                if (clue && !confirmDestructiveAction(`将线索"${clue.title}"移入回收站？`)) {
                   return;
                 }
                 await repository.softDeleteClue(clueId);
@@ -175,14 +174,14 @@ function CreateClueForm({ caseName, onCreate }: CreateClueFormProps) {
   }
 
   return (
-    <form aria-label="Create clue" className="panel form-grid" onSubmit={handleSubmit}>
-      <h2>Add clue to {caseName}</h2>
+    <form aria-label="创建线索" className="panel form-grid" onSubmit={handleSubmit}>
+      <h2>添加到 {caseName}</h2>
       <div>
-        <label htmlFor="clue-title">Title</label>
+        <label htmlFor="clue-title">标题</label>
         <input id="clue-title" onChange={(event) => setTitle(event.target.value)} value={title} />
       </div>
       <div>
-        <label htmlFor="clue-source">Source</label>
+        <label htmlFor="clue-source">来源</label>
         <input
           id="clue-source"
           onChange={(event) => setSource(event.target.value)}
@@ -190,7 +189,7 @@ function CreateClueForm({ caseName, onCreate }: CreateClueFormProps) {
         />
       </div>
       <div>
-        <label htmlFor="clue-discovered-at">Discovered at</label>
+        <label htmlFor="clue-discovered-at">发现时间</label>
         <input
           id="clue-discovered-at"
           onChange={(event) => setDiscoveredAt(event.target.value)}
@@ -199,7 +198,7 @@ function CreateClueForm({ caseName, onCreate }: CreateClueFormProps) {
         />
       </div>
       <div>
-        <label htmlFor="clue-content">Content</label>
+        <label htmlFor="clue-content">内容</label>
         <textarea
           id="clue-content"
           onChange={(event) => setContent(event.target.value)}
@@ -207,7 +206,7 @@ function CreateClueForm({ caseName, onCreate }: CreateClueFormProps) {
           value={content}
         />
       </div>
-      <button type="submit">Create clue</button>
+      <button type="submit">创建线索</button>
     </form>
   );
 }
@@ -226,8 +225,8 @@ function ClueList({ clues, emptyMessage, emptyTitle, onDelete, onSave }: ClueLis
   }
 
   return (
-    <div aria-label="Clue list" className="stack">
-      <h2>Clues</h2>
+    <div aria-label="线索列表" className="stack">
+      <h2>线索</h2>
       {clues.map((clue) => (
         <ClueEditor clue={clue} key={clue.id} onDelete={onDelete} onSave={onSave} />
       ))}
@@ -289,16 +288,16 @@ function ClueEditor({ clue, onDelete, onSave }: ClueEditorProps) {
 
   return (
     <article className="panel">
-      <form aria-label={`Edit clue ${clue.title}`} className="form-grid" onSubmit={handleSubmit}>
+      <form aria-label={`编辑线索 ${clue.title}`} className="form-grid" onSubmit={handleSubmit}>
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Clue</p>
+            <p className="eyebrow">线索</p>
             <h3>{clue.title}</h3>
           </div>
-          <span className="badge">{clue.source || 'No source'}</span>
+          <span className="badge">{clue.source || '未标注来源'}</span>
         </div>
         <div>
-          <label htmlFor={`clue-title-${clue.id}`}>Title</label>
+          <label htmlFor={`clue-title-${clue.id}`}>标题</label>
           <input
             id={`clue-title-${clue.id}`}
             onChange={(event) => setTitle(event.target.value)}
@@ -306,7 +305,7 @@ function ClueEditor({ clue, onDelete, onSave }: ClueEditorProps) {
           />
         </div>
         <div>
-          <label htmlFor={`clue-source-${clue.id}`}>Source</label>
+          <label htmlFor={`clue-source-${clue.id}`}>来源</label>
           <input
             id={`clue-source-${clue.id}`}
             onChange={(event) => setSource(event.target.value)}
@@ -314,7 +313,7 @@ function ClueEditor({ clue, onDelete, onSave }: ClueEditorProps) {
           />
         </div>
         <div>
-          <label htmlFor={`clue-discovered-at-${clue.id}`}>Discovered at</label>
+          <label htmlFor={`clue-discovered-at-${clue.id}`}>发现时间</label>
           <input
             id={`clue-discovered-at-${clue.id}`}
             onChange={(event) => setDiscoveredAt(event.target.value)}
@@ -322,7 +321,7 @@ function ClueEditor({ clue, onDelete, onSave }: ClueEditorProps) {
           />
         </div>
         <div>
-          <label htmlFor={`clue-content-${clue.id}`}>Content</label>
+          <label htmlFor={`clue-content-${clue.id}`}>内容</label>
           <textarea
             id={`clue-content-${clue.id}`}
             onChange={(event) => setContent(event.target.value)}
@@ -331,9 +330,9 @@ function ClueEditor({ clue, onDelete, onSave }: ClueEditorProps) {
           />
         </div>
         <div className="button-row">
-          <button type="submit">Save clue</button>
+          <button type="submit">保存线索</button>
           <button onClick={() => onDelete(clue.id)} type="button">
-            Delete clue
+            删除线索
           </button>
         </div>
       </form>

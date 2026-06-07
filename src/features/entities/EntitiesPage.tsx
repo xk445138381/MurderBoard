@@ -75,10 +75,9 @@ export function EntitiesPage() {
     <section aria-labelledby="entities-title" className="stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Phase 4</p>
-          <h1 id="entities-title">Entities</h1>
+          <h1 id="entities-title">人物管理</h1>
         </div>
-        <p>Record characters for the selected case, including role and notes.</p>
+        <p>记录当前案件的涉案人物，包括角色和备注。</p>
       </div>
 
       <CaseScopeSelector
@@ -94,8 +93,8 @@ export function EntitiesPage() {
         workspaces={workspaces}
       />
 
-      {errorMessage ? <ErrorState title="Action failed" message={errorMessage} /> : null}
-      {isLoadingCharacters ? <LoadingState message="Loading characters..." /> : null}
+      {errorMessage ? <ErrorState title="操作失败" message={errorMessage} /> : null}
+      {isLoadingCharacters ? <LoadingState message="加载中..." /> : null}
 
       {selectedCase ? (
         <>
@@ -108,25 +107,25 @@ export function EntitiesPage() {
             }
           />
           <ListSearch
-            label="Search characters"
+            label="搜索人物"
             onSearchChange={setCharacterQuery}
-            placeholder="Filter by name, role, or notes"
+            placeholder="按姓名、角色或备注筛选"
             searchValue={characterQuery}
           />
           <CharacterList
             characters={filteredCharacters}
             emptyMessage={
               characters.length === 0
-                ? 'Add suspects, witnesses, and players.'
-                : 'No characters match the current search.'
+                ? '添加嫌疑人、证人和玩家。'
+                : '没有找到匹配的人物。'
             }
-            emptyTitle={characters.length === 0 ? 'No characters yet' : 'No characters found'}
+            emptyTitle={characters.length === 0 ? '暂无人物' : '未找到人物'}
             onDelete={(characterId) =>
               runAction(async () => {
                 const character = characters.find((candidate) => candidate.id === characterId);
                 if (
                   character &&
-                  !confirmDestructiveAction(`Move character "${character.name}" to trash?`)
+                  !confirmDestructiveAction(`将人物"${character.name}"移入回收站？`)
                 ) {
                   return;
                 }
@@ -164,10 +163,10 @@ function CreateCharacterForm({ caseName, onCreate }: CreateCharacterFormProps) {
   }
 
   return (
-    <form aria-label="Create character" className="panel form-grid" onSubmit={handleSubmit}>
-      <h2>Add character to {caseName}</h2>
+    <form aria-label="创建人物" className="panel form-grid" onSubmit={handleSubmit}>
+      <h2>添加到 {caseName}</h2>
       <div>
-        <label htmlFor="character-name">Name</label>
+        <label htmlFor="character-name">姓名</label>
         <input
           id="character-name"
           onChange={(event) => setName(event.target.value)}
@@ -175,7 +174,7 @@ function CreateCharacterForm({ caseName, onCreate }: CreateCharacterFormProps) {
         />
       </div>
       <div>
-        <label htmlFor="character-role">Role</label>
+        <label htmlFor="character-role">角色</label>
         <input
           id="character-role"
           onChange={(event) => setRole(event.target.value)}
@@ -183,7 +182,7 @@ function CreateCharacterForm({ caseName, onCreate }: CreateCharacterFormProps) {
         />
       </div>
       <div>
-        <label htmlFor="character-notes">Notes</label>
+        <label htmlFor="character-notes">备注</label>
         <textarea
           id="character-notes"
           onChange={(event) => setNotes(event.target.value)}
@@ -191,7 +190,7 @@ function CreateCharacterForm({ caseName, onCreate }: CreateCharacterFormProps) {
           value={notes}
         />
       </div>
-      <button type="submit">Create character</button>
+      <button type="submit">创建人物</button>
     </form>
   );
 }
@@ -216,8 +215,8 @@ function CharacterList({
   }
 
   return (
-    <div aria-label="Character list" className="stack">
-      <h2>Characters</h2>
+    <div aria-label="人物列表" className="stack">
+      <h2>人物</h2>
       {characters.map((character) => (
         <CharacterEditor
           character={character}
@@ -277,16 +276,16 @@ function CharacterEditor({ character, onDelete, onSave }: CharacterEditorProps) 
 
   return (
     <article className="panel">
-      <form aria-label={`Edit character ${character.name}`} className="form-grid" onSubmit={handleSubmit}>
+      <form aria-label={`编辑人物 ${character.name}`} className="form-grid" onSubmit={handleSubmit}>
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Character</p>
+            <p className="eyebrow">人物</p>
             <h3>{character.name}</h3>
           </div>
-          <span className="badge">{character.role || 'No role'}</span>
+          <span className="badge">{character.role || '未设定'}</span>
         </div>
         <div>
-          <label htmlFor={`character-name-${character.id}`}>Name</label>
+          <label htmlFor={`character-name-${character.id}`}>姓名</label>
           <input
             id={`character-name-${character.id}`}
             onChange={(event) => setName(event.target.value)}
@@ -294,7 +293,7 @@ function CharacterEditor({ character, onDelete, onSave }: CharacterEditorProps) 
           />
         </div>
         <div>
-          <label htmlFor={`character-role-${character.id}`}>Role</label>
+          <label htmlFor={`character-role-${character.id}`}>角色</label>
           <input
             id={`character-role-${character.id}`}
             onChange={(event) => setRole(event.target.value)}
@@ -302,7 +301,7 @@ function CharacterEditor({ character, onDelete, onSave }: CharacterEditorProps) 
           />
         </div>
         <div>
-          <label htmlFor={`character-notes-${character.id}`}>Notes</label>
+          <label htmlFor={`character-notes-${character.id}`}>备注</label>
           <textarea
             id={`character-notes-${character.id}`}
             onChange={(event) => setNotes(event.target.value)}
@@ -311,9 +310,9 @@ function CharacterEditor({ character, onDelete, onSave }: CharacterEditorProps) 
           />
         </div>
         <div className="button-row">
-          <button type="submit">Save character</button>
+          <button type="submit">保存人物</button>
           <button onClick={() => onDelete(character.id)} type="button">
-            Delete character
+            删除人物
           </button>
         </div>
       </form>
