@@ -1,0 +1,35 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot@1.0.56
+      - name: Verify Copilot CLI
+        run: copilot --version
+      - name: Add superpowers marketplace
+        run: copilot plugin marketplace add obra/superpowers-marketplace
+      - name: Install superpowers plugin
+        run: |
+          set -euo pipefail
+          if ! copilot plugin install superpowers@superpowers-marketplace; then
+            echo "Failed to install superpowers from superpowers-marketplace." >&2
+            exit 1
+          fi
+          copilot plugin list
